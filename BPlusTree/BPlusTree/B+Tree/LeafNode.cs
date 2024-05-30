@@ -121,23 +121,6 @@ namespace BPlusTree
                     }
 
                     // splits right side to new node and keeps left side for current node.
-                    LeafNode SplitRight()
-                    {
-                        var right = new LeafNode(Items.SplitRight());
-                        if (Next != null)
-                        {
-                            Next.Previous = right;
-                            right.Next = Next; // to make linked list.
-                        }
-                        right.Previous = this;
-                        Next = right;
-                        return right;
-                    }
-
-                    bool CanSpillTo(LeafNode leaf)
-                    {
-                        return leaf?.IsFull == false;
-                    }
                 }
                 else
                 {
@@ -147,6 +130,24 @@ namespace BPlusTree
                 }
 
                 return rightLeaf;
+            }
+
+            private bool CanSpillTo(LeafNode leaf)
+            {
+                return leaf?.IsFull == false;
+            }
+
+            private LeafNode SplitRight()
+            {
+                var right = new LeafNode(Items.SplitRight());
+                if (Next != null)
+                {
+                    Next.Previous = right;
+                    right.Next = Next; // to make linked list.
+                }
+                right.Previous = this;
+                Next = right;
+                return right;
             }
 
             #endregion
@@ -215,15 +216,15 @@ namespace BPlusTree
                             else Debug.Fail("leaf must either have true left or true right sibling.");
                         }
                     }
-
-                    bool CanBorrowFrom(LeafNode leaf)
-                    {
-                        if (leaf == null) return false;
-                        return leaf.Items.Count > leaf.Items.Capacity / 2;
-                    }
                 }
 
                 return merge; // true if merge happened.
+            }
+
+            private bool CanBorrowFrom(LeafNode leaf)
+            {
+                if (leaf == null) return false;
+                return leaf.Items.Count > leaf.Items.Capacity / 2;
             }
 
             #endregion

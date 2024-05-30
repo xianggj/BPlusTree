@@ -58,12 +58,13 @@ namespace BPlusTree
         /// initializes a new <see cref="BPTree{TKey, TValue}"/>.
         /// </summary>
         public BPTree(IComparer<TKey> keyComparer = null, int internalNodeCapacity = 32, int leafCapacity = 32)
-        { 
+        {
             if (internalNodeCapacity < 2)
-                throw new ArgumentOutOfRangeException(nameof(internalNodeCapacity), "internal node capacity must be greater than 1.");
+                throw new ArgumentOutOfRangeException(nameof(internalNodeCapacity),
+                    "internal node capacity must be greater than 1.");
             if (leafCapacity < 1)
                 throw new ArgumentOutOfRangeException(nameof(leafCapacity), "leaf capacity must be greater than 0.");
-            
+
             _comparer = new NodeComparer(keyComparer);
 
             InternalNodeCapacity = internalNodeCapacity;
@@ -73,7 +74,8 @@ namespace BPlusTree
         /// <summary>
         /// initializes a new <see cref="BPTree{TKey, TValue}"/>.
         /// </summary>
-        public BPTree(IEnumerable<(TKey key, TValue value)> source, IComparer<TKey> keyComparer = null, int internalNodeCapacity = 32, int leafCapacity = 32) 
+        public BPTree(IEnumerable<ValueTuple<TKey, TValue>> source, IComparer<TKey> keyComparer = null,
+            int internalNodeCapacity = 32, int leafCapacity = 32)
             : this(keyComparer, internalNodeCapacity, leafCapacity)
         {
             new Builder(this, source).Build();
@@ -89,15 +91,16 @@ namespace BPlusTree
         /// <exception cref="InvalidOperationException">if item with the same key already exists.</exception>
         public void Add(TKey key, TValue value)
         {
-            AddOrUpdate(key, value, _ => throw new InvalidOperationException("item with same key already exists."));
+            AddOrUpdate(key, value,
+                _ => { throw new InvalidOperationException("item with same key already exists."); });
         }
-        
+
         /// <summary>
         /// add value if key does not exists. returns true if value is added or false if key already exists.
         /// </summary>
         public bool TryAdd(TKey key, TValue value)
         {
-            return AddOrUpdate(key, value, t => t.oldValue);
+            return AddOrUpdate(key, value, t => t.Item3);
         }
 
         /// <summary>
@@ -105,24 +108,25 @@ namespace BPlusTree
         /// </summary>
         public bool AddOrReplace(TKey key, TValue value)
         {
-            return AddOrUpdate(key, value, t => t.newValue);
+            return AddOrUpdate(key, value, t => t.Item2);
         }
 
         /// <summary>
         /// adds an specified key and value to the tree, in case key is duplicate, update function is used to update existing value. returns true if item was added.
         /// </summary>
-        public bool AddOrUpdate(TKey key, TValue value, Func<(TKey key, TValue newValue, TValue oldValue), TValue> updateFunction)
+        public bool AddOrUpdate(TKey key, TValue value, Func<ValueTuple<TKey, TValue, TValue>, TValue> updateFunction)
         {
-            return AddOrUpdateFromArg(key, value, t => t.arg, updateFunction);
+            return AddOrUpdateFromArg(key, value, t => t.Item2, updateFunction);
         }
 
         /// <summary>
         /// adds an specified key and value to the tree. in case key is duplicate, update function is used to update existing value. 
         /// in case key is not duplicate, add function is used with an argument to produce a value. returns true if item was added.
         /// </summary>
-        public bool AddOrUpdateFromArg<TArg>(TKey key, TArg arg, Func<(TKey key, TArg arg), TValue> addFunction, Func<(TKey key, TArg arg, TValue oldValue), TValue> updateFunction)
+        public bool AddOrUpdateFromArg<TArg>(TKey key, TArg arg, Func<ValueTuple<TKey, TArg>, TValue> addFunction,
+            Func<ValueTuple<TKey, TArg, TValue>, TValue> updateFunction)
         {
-            var args = new InsertArguments<TArg>(ref key,ref arg, ref addFunction,ref  updateFunction, _comparer);
+            var args = new InsertArguments<TArg>(ref key, ref arg, ref addFunction, ref updateFunction, _comparer);
             AddOrUpdateCore(ref args);
             return args.Added;
         }
@@ -135,13 +139,13 @@ namespace BPlusTree
             if (Count == 0)
             {
                 Root = new LeafNode(LeafCapacity); // first root is leaf
-                LinkList = (LeafNode)Root;
+                LinkList = (LeafNode) Root;
                 ReverseLinkList = LinkList;
                 Height++;
             }
 
             // append optimization: if item key is in order, this may add item in O(1) operation.
-            int order = Count == 0 ? 1 : args.Comparer.KeyComparer.Compare(args.Key, Last.Key);
+            int order = Count == 0 ? 1 : args.Comparer.KeyComparer.Compare(args.Key, Last.Item1);
             if (order > 0 && !ReverseLinkList.IsFull)
             {
                 ReverseLinkList.Items.PushLast(new KeyValueItem(args.Key, args.GetValue()));
@@ -159,7 +163,7 @@ namespace BPlusTree
             }
 
             // preppend optimization: if item key is in order, this may add item in O(1) operation.
-            order = args.Comparer.KeyComparer.Compare(args.Key, First.Key);
+            order = args.Comparer.KeyComparer.Compare(args.Key, First.Item1);
             if (order < 0 && !LinkList.IsFull)
             {
                 LinkList.Items.PushFirst(new KeyValueItem(args.Key, args.GetValue()));
@@ -177,15 +181,16 @@ namespace BPlusTree
             }
 
             NodeRelatives nr = new NodeRelatives();
-            var rightSplit = Root.Insert(ref args,ref nr);
+            var rightSplit = Root.Insert(ref args, ref nr);
 
             if (args.Added) Count++;
             _version++;
 
             // if split occured at root, make a new root and increase height.
-            if (rightSplit is KeyNodeItem middle)
+            if (rightSplit is KeyNodeItem)
             {
-                var newRoot = new InternalNode(InternalNodeCapacity) { Left = Root };
+                var middle = (KeyNodeItem) rightSplit;
+                var newRoot = new InternalNode(InternalNodeCapacity) {Left = Root};
                 newRoot.Items.Insert(0, middle);
                 Root = newRoot;
                 Height++;
@@ -208,7 +213,7 @@ namespace BPlusTree
         {
             first = default(TValue);
             if (Count == 0) return false;
-            return Remove(First.Key, out first);
+            return Remove(First.Item1, out first);
         }
 
         /// <summary>
@@ -218,7 +223,7 @@ namespace BPlusTree
         {
             last = default(TValue);
             if (Count == 0) return false;
-            return Remove(Last.Key, out last);
+            return Remove(Last.Item1, out last);
         }
 
         /// <summary>
@@ -240,7 +245,7 @@ namespace BPlusTree
             if (Count == 0) return;
 
             // optimize for removing items from beginning
-            int order = args.Comparer.KeyComparer.Compare(args.Key, First.Key);
+            int order = args.Comparer.KeyComparer.Compare(args.Key, First.Item1);
             if (order < 0) return;
             if (order == 0 && (Root == LinkList || LinkList.Items.Count > LinkList.Items.Capacity / 2))
             {
@@ -253,12 +258,15 @@ namespace BPlusTree
                     Root = LinkList = ReverseLinkList = null;
                     Height--;
                 }
+
                 return;
             }
+
             // optimize for removing items from end
-            order = args.Comparer.KeyComparer.Compare(args.Key, Last.Key);
+            order = args.Comparer.KeyComparer.Compare(args.Key, Last.Item1);
             if (order > 0) return;
-            if (order == 0 && (Root == ReverseLinkList || ReverseLinkList.Items.Count > ReverseLinkList.Items.Capacity / 2))
+            if (order == 0 && (Root == ReverseLinkList ||
+                               ReverseLinkList.Items.Count > ReverseLinkList.Items.Capacity / 2))
             {
                 args.SetRemovedValue(ReverseLinkList.Items.PopLast().Value);
                 Debug.Assert(Root == ReverseLinkList || ReverseLinkList.IsHalfFull);
@@ -284,10 +292,12 @@ namespace BPlusTree
                     LinkList = null;
                     ReverseLinkList = null;
                 }
+
                 Height--;
             }
 
-            if(ReverseLinkList?.Previous != null && ReverseLinkList.Previous.Next == null) // true if last leaf is merged.
+            if (ReverseLinkList?.Previous != null &&
+                ReverseLinkList.Previous.Next == null) // true if last leaf is merged.
             {
                 ReverseLinkList = ReverseLinkList.Previous;
             }
@@ -322,7 +332,8 @@ namespace BPlusTree
         {
             get
             {
-                if (!TryGet(key, out var value)) throw new KeyNotFoundException();
+                TValue value;
+                if (!TryGet(key, out value)) throw new KeyNotFoundException();
                 return value;
             }
         }
@@ -333,7 +344,8 @@ namespace BPlusTree
         public bool TryGet(TKey key, out TValue value)
         {
             value = default(TValue);
-            var leaf = FindLeaf(key, out var index);
+            int index;
+            var leaf = FindLeaf(key, out index);
             if (index >= 0) value = leaf.Items[index].Value;
             return index >= 0;
         }
@@ -343,6 +355,7 @@ namespace BPlusTree
         /// </summary>
         public bool ContainsKey(TKey key)
         {
+            TValue _;
             return TryGet(key, out _);
         }
 
@@ -357,7 +370,7 @@ namespace BPlusTree
             var node = Root;
             while (!node.IsLeaf) node = node.GetNearestChild(key, _comparer);
             index = node.Find(ref key, _comparer);
-            return (LeafNode)node;
+            return (LeafNode) node;
         }
 
         /// <summary>
@@ -365,7 +378,8 @@ namespace BPlusTree
         /// </summary>
         public TValue NextNearest(TKey key) // todo should return int.
         {
-            var leaf = FindLeaf(key, out var leafIndex);
+            int leafIndex;
+            var leaf = FindLeaf(key, out leafIndex);
             if (leafIndex < 0) leafIndex = ~leafIndex; // get nearest
             if (leafIndex >= leaf.Items.Count) leafIndex--;
             return leaf.Items[leafIndex].Value;
@@ -375,13 +389,13 @@ namespace BPlusTree
         /// retrieves first item from the tree.
         /// </summary>
         /// <exception cref="InvalidOperationException">collection is empty.</exception>
-        public (TKey Key, TValue Value) First
+        public ValueTuple<TKey, TValue> First
         {
             get
             {
                 if (Count == 0) throw new InvalidOperationException("collection is empty.");
                 var firstItem = LinkList.Items.First;
-                return (firstItem.Key, firstItem.Value);
+                return ValueTuple.Create(firstItem.Key, firstItem.Value);
             }
         }
 
@@ -389,13 +403,13 @@ namespace BPlusTree
         /// retrieves last item from the tree.
         /// </summary>
         /// <exception cref="InvalidOperationException">collection is empty.</exception>
-        public (TKey Key, TValue Value) Last
+        public ValueTuple<TKey, TValue> Last
         {
             get
             {
                 if (Count == 0) throw new InvalidOperationException("collection is empty.");
                 var lastItem = ReverseLinkList.Items.Last;
-                return (lastItem.Key, lastItem.Value);
+                return ValueTuple.Create(lastItem.Key, lastItem.Value);
             }
         }
 
@@ -406,9 +420,10 @@ namespace BPlusTree
         /// <summary>
         /// returns an enumerable for this tree.
         /// </summary>
-        public IEnumerable<(TKey Key, TValue Value)> AsPairEnumerable(bool moveForward = true)
+        public IEnumerable<ValueTuple<TKey, TValue>> AsPairEnumerable(bool moveForward = true)
         {
-            return GetEnumerable(moveForward ? LinkList : ReverseLinkList, moveForward ? 0 : ReverseLinkList.Length - 1, moveForward);
+            return GetEnumerable(moveForward ? LinkList : ReverseLinkList, moveForward ? 0 : ReverseLinkList.Length - 1,
+                moveForward);
         }
 
         /// <summary>
@@ -416,25 +431,27 @@ namespace BPlusTree
         /// </summary>
         /// <typeparam name="TCast">target type to cast items while enumerating</typeparam>
         /// <param name="filter">if true is passed, filters the sequence otherwise casts the sequence values.</param>
-        public IEnumerable<(TKey Key, TCast Value)> AsPairEnumerable<TCast>(bool filter = true, bool moveForward = true)
+        public IEnumerable<ValueTuple<TKey, TCast>> AsPairEnumerable<TCast>(bool filter = true, bool moveForward = true)
         {
             var enumerable = AsPairEnumerable(moveForward);
-            if (filter) enumerable = enumerable.Where(x => x.Value is TCast);
-            return enumerable.Select(x => (x.Key, (TCast)(object)x.Value));
+            if (filter) enumerable = enumerable.Where(x => x.Item2 is TCast);
+            return enumerable.Select(x =>ValueTuple.Create(x.Item1, (TCast) (object) x.Item2));
         }
 
         /// <summary>
         /// returns an enumerable for this tree.
         /// </summary>
         /// <param name="start">start of enumerable.</param>
-        public IEnumerable<(TKey Key, TValue Value)> AsPairEnumerable(TKey start, bool moveForward = true)
+        public IEnumerable<ValueTuple<TKey, TValue>> AsPairEnumerable(TKey start, bool moveForward = true)
         {
-            var leaf = FindLeaf(start, out var index);
+            int index;
+            var leaf = FindLeaf(start, out index);
             if (index < 0)
             {
                 index = ~index;
                 if (!moveForward) index--;
             }
+
             return GetEnumerable(leaf, index, moveForward);
         }
 
@@ -444,14 +461,15 @@ namespace BPlusTree
         /// <typeparam name="TCast">target type to cast items while enumerating</typeparam>
         /// <param name="start">start of enumerable.</param>
         /// <param name="filter">if true is passed, filters the sequence otherwise casts the sequence values.</param>
-        public IEnumerable<(TKey Key, TCast Value)> AsPairEnumerable<TCast>(TKey start, bool filter = true, bool moveForward = true)
+        public IEnumerable<ValueTuple<TKey, TCast>> AsPairEnumerable<TCast>(TKey start, bool filter = true,
+            bool moveForward = true)
         {
             var enumerable = AsPairEnumerable(start, moveForward);
-            if (filter) enumerable = enumerable.Where(x => x.Value is TCast);
-            return enumerable.Select(x => (x.Key, (TCast)(object)x.Value));
+            if (filter) enumerable = enumerable.Where(x => x.Item2 is TCast);
+            return enumerable.Select(x => ValueTuple.Create(x.Item1, (TCast) (object) x.Item2));
         }
 
-        private IEnumerable<(TKey Key, TValue Value)> GetEnumerable(LeafNode leaf, int index, bool moveForward)
+        private IEnumerable<ValueTuple<TKey, TValue>> GetEnumerable(LeafNode leaf, int index, bool moveForward)
         {
             var version = _version;
 
@@ -462,10 +480,12 @@ namespace BPlusTree
                     for (; index < leaf.Items.Count; index++)
                     {
                         var item = leaf.Items[index];
-                        yield return (item.Key, item.Value);
+                        yield return ValueTuple.Create(item.Key, item.Value);
                         if (version != _version) throw new InvalidOperationException("collection was modified.");
                     }
-                    leaf = leaf.Next; index = 0;
+
+                    leaf = leaf.Next;
+                    index = 0;
                 }
             }
             else
@@ -475,10 +495,12 @@ namespace BPlusTree
                     for (; index >= 0; index--)
                     {
                         var item = leaf.Items[index];
-                        yield return (item.Key, item.Value);
+                        yield return ValueTuple.Create(item.Key, item.Value);
                         if (version != _version) throw new InvalidOperationException("collection was modified.");
                     }
-                    leaf = leaf.Previous; index = leaf.Items.Count - 1;
+
+                    leaf = leaf.Previous;
+                    index = leaf.Items.Count - 1;
                 }
             }
         }
@@ -488,7 +510,7 @@ namespace BPlusTree
         /// </summary>
         public IEnumerable<TValue> AsEnumerable(bool moveForward = true)
         {
-            return AsPairEnumerable(moveForward).Select(pair => pair.Value);
+            return AsPairEnumerable(moveForward).Select(pair => pair.Item2);
         }
 
         /// <summary>
@@ -497,9 +519,9 @@ namespace BPlusTree
         /// <param name="start">start of enumerable.</param>
         public IEnumerable<TValue> AsEnumerable(TKey start, bool moveForward = true)
         {
-            return AsPairEnumerable(start, moveForward).Select(pair => pair.Value);
+            return AsPairEnumerable(start, moveForward).Select(pair => pair.Item2);
         }
-        
+
         public IEnumerator<TValue> GetEnumerator()
         {
             return AsEnumerable().GetEnumerator();

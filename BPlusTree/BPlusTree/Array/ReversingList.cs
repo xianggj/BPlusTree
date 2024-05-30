@@ -11,7 +11,12 @@ namespace BPlusTree
 
         public ReversingList(IList<T> source)
         {
-            this.source = source ?? throw new ArgumentOutOfRangeException(nameof(source));
+            if (null == source)
+            {
+                throw new ArgumentOutOfRangeException(nameof(source)); 
+            }
+
+            this.source = source;
         }
 
         private int Reverse(int index)
@@ -21,7 +26,10 @@ namespace BPlusTree
 
         public T this[int index]
         {
-            get => source[Reverse(index)];
+            get
+            {
+                return source[Reverse(index)];
+            }
             set
             {
                 source[Reverse(index)] = value;

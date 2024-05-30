@@ -35,7 +35,7 @@ namespace BPlusTree
             // previous key is used to check if items are being inserted in order or not.
             private TKey _prevKey;
             private LeafNode _currentLeaf;
-            
+
             private LeafNode _linkList; // reference to first leaf (i.e linked list)
             private Node _root;
             private int _count; // count of items during bulk load.
@@ -50,7 +50,7 @@ namespace BPlusTree
             public int InternalNodeCapacity { get; }
 
             public int LeafCapacity { get; }
-            
+
             public IComparer<TKey> KeyComparer { get; }
 
             #endregion
@@ -64,21 +64,24 @@ namespace BPlusTree
                 _bulkLoading = _initialize = true;
                 KeyComparer = keyComparer ?? Comparer<TKey>.Default;
             }
-            
-            public Builder(BPTree<TKey, TValue> tree) : this(tree.KeyComparer, tree.InternalNodeCapacity, tree.LeafCapacity)
+
+            public Builder(BPTree<TKey, TValue> tree) : this(tree.KeyComparer, tree.InternalNodeCapacity,
+                tree.LeafCapacity)
             {
                 _tree = tree;
-                if (tree?.Count > 0) _bulkLoading = _initialize = false; // if tree is already initialized bulkloading is not supported
+                if (tree?.Count > 0)
+                    _bulkLoading = _initialize = false; // if tree is already initialized bulkloading is not supported
             }
 
-            public Builder(BPTree<TKey, TValue> tree, IEnumerable<(TKey key, TValue value)> source) : this(tree)
+            public Builder(BPTree<TKey, TValue> tree, IEnumerable<ValueTuple<TKey, TValue>> source) : this(tree)
             {
                 if (source == null) throw new ArgumentNullException(nameof(source));
 
-                foreach (var (key, value) in source) Add(key, value);
+                foreach (var t in source) Add(t.Item1, t.Item2);
             }
 
-            public Builder(IEnumerable<(TKey key, TValue value)> source, IComparer<TKey> keyComparer = null, int internalNodeCapacity = 32, int leafCapacity = 32)
+            public Builder(IEnumerable<ValueTuple<TKey, TValue>> source, IComparer<TKey> keyComparer = null,
+                int internalNodeCapacity = 32, int leafCapacity = 32)
                 : this(new BPTree<TKey, TValue>(keyComparer, internalNodeCapacity, leafCapacity), source)
             {
             }
@@ -89,19 +92,20 @@ namespace BPlusTree
 
             public void Add(TKey key, TValue value)
             {
-                Add(key, value, _ => throw new InvalidOperationException("item with same key already exist."));
+                Add(key, value, _ => { throw new InvalidOperationException("item with same key already exist."); });
             }
 
-            public void Add(TKey key, TValue value, Func<(TKey key, TValue newValue, TValue oldValue), TValue> updateFunction)
+            public void Add(TKey key, TValue value, Func<ValueTuple<TKey, TValue, TValue>, TValue> updateFunction)
             {
-                Add(key, value, t => t.arg, updateFunction);
+                Add(key, value, t => t.Item2, updateFunction);
             }
 
-            public void Add<TArg>(TKey key, TArg arg, Func<(TKey key, TArg arg), TValue> addFunction, Func<(TKey key, TArg arg, TValue oldValue), TValue> updateFunction)
+            public void Add<TArg>(TKey key, TArg arg, Func<ValueTuple<TKey, TArg>, TValue> addFunction,
+                Func<ValueTuple<TKey, TArg, TValue>, TValue> updateFunction)
             {
                 if (_initialize)
                 {
-                    var item = new KeyValueItem(key, addFunction((key, arg)));
+                    var item = new KeyValueItem(key, addFunction(ValueTuple.Create(key, arg)));
                     _currentLeaf = NewLeafNode(item);
                     _linkList = _currentLeaf; // initialize linked list
                     nodes = RingArray<Node>.NewArray(Enumerable.Repeat(_currentLeaf, 1), 32);
@@ -115,11 +119,12 @@ namespace BPlusTree
                 else
                 {
                     // check if insertions are in order so we can continue bulk loading
-                    var c = KeyComparer.Compare(key, _prevKey); 
+                    var c = KeyComparer.Compare(key, _prevKey);
                     if (c == 0)
                     {
                         var lastItem = _currentLeaf.Items.Last;
-                        KeyValueItem.ChangeValue(ref lastItem, updateFunction((key, arg, lastItem.Value)));
+                        KeyValueItem.ChangeValue(ref lastItem,
+                            updateFunction(ValueTuple.Create(key, arg, lastItem.Value)));
                         _currentLeaf.Items.Last = lastItem;
                     }
                     else if (c < 0) // insertions are not in order
@@ -129,7 +134,7 @@ namespace BPlusTree
                     }
                     else
                     {
-                        var item = new KeyValueItem(key, addFunction((key, arg)));
+                        var item = new KeyValueItem(key, addFunction(ValueTuple.Create(key, arg)));
 
                         if (!_currentLeaf.IsFull) // current leaf has space for new items
                         {
@@ -149,23 +154,23 @@ namespace BPlusTree
                 }
 
                 _prevKey = key;
+            }
 
-                LeafNode NewLeafNode(KeyValueItem firstItem)
-                {
-                    var newLeaf = new LeafNode(LeafCapacity);
-                    newLeaf.Items.Add(firstItem);
-                    return newLeaf;
-                }
+            private LeafNode NewLeafNode(KeyValueItem firstItem)
+            {
+                var newLeaf = new LeafNode(LeafCapacity);
+                newLeaf.Items.Add(firstItem);
+                return newLeaf;
             }
 
             #endregion
 
             #region Remove
-            
+
             public bool Remove(TKey key, out TValue value)
             {
                 return Build().Remove(key, out value); // switch to iterative insertion mode.
-            } 
+            }
 
             #endregion
 
@@ -175,7 +180,7 @@ namespace BPlusTree
             {
                 if (!_bulkLoading) return _tree; // return tree if its already built.
 
-                if(_tree == null)
+                if (_tree == null)
                     _tree = new BPTree<TKey, TValue>(KeyComparer, InternalNodeCapacity, LeafCapacity);
 
                 if (!_initialize) // if tree contains at least one item.
@@ -186,7 +191,7 @@ namespace BPlusTree
                     }
                     else
                     {
-                        var leftLeaf = (LeafNode)nodes[nodes.Count - 2];
+                        var leftLeaf = (LeafNode) nodes[nodes.Count - 2];
                         while (!_currentLeaf.IsHalfFull) // while last leaf is not half full
                         {
                             _currentLeaf.Items.PushFirst(leftLeaf.Items.PopLast()); // borrow from its left
@@ -202,9 +207,10 @@ namespace BPlusTree
 
                             if (node == null) // end of level
                             {
-                                var leftNode = (InternalNode)nodes[nodes.Count - 2];
+                                var leftNode = (InternalNode) nodes[nodes.Count - 2];
 
-                                while (!internalNode.IsHalfFull) // while last node is not half full borrow from its left
+                                while (!internalNode
+                                           .IsHalfFull) // while last node is not half full borrow from its left
                                 {
                                     var last = leftNode.Items.PopLast(); // should become left of current node.
                                     var left = internalNode.Left; // should become first item of current node.
@@ -232,20 +238,6 @@ namespace BPlusTree
                         }
 
                         _root = nodes.PopLast();
-
-                        InternalNode IncreaseHeight()
-                        {
-                            _height++;
-                            nodes.PushLast(null); // null indicates end of each level.
-                            return NewInternalNode(); // first node for new level.
-                        }
-
-                        InternalNode NewInternalNode()
-                        {
-                            var newNode = new InternalNode(InternalNodeCapacity);
-                            nodes.PushLast(newNode);
-                            return newNode;
-                        }
                     }
                 }
 
@@ -254,17 +246,31 @@ namespace BPlusTree
                 {
                     while (!lastLeaf.IsLeaf) // find last leaf
                     {
-                        lastLeaf = ((InternalNode)lastLeaf).GetLastChild();
+                        lastLeaf = ((InternalNode) lastLeaf).GetLastChild();
                     }
                 }
 
                 _tree.Root = _root;
                 _tree.LinkList = _linkList;
-                _tree.ReverseLinkList = (LeafNode)lastLeaf;
+                _tree.ReverseLinkList = (LeafNode) lastLeaf;
                 _tree.Count = _count;
                 _tree.Height = _height;
                 _bulkLoading = false; // tree is built.
                 return _tree;
+            }
+
+            InternalNode IncreaseHeight()
+            {
+                _height++;
+                nodes.PushLast(null); // null indicates end of each level.
+                return NewInternalNode(); // first node for new level.
+            }
+
+            private InternalNode NewInternalNode()
+            {
+                var newNode = new InternalNode(InternalNodeCapacity);
+                nodes.PushLast(newNode);
+                return newNode;
             }
 
             #endregion

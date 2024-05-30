@@ -77,8 +77,9 @@ namespace BPlusTree
                 var childRelatives = NodeRelatives.Create(child, index, this,ref relatives);
                 var rightChild = child.Insert(ref args, ref childRelatives);
 
-                if (rightChild is KeyNodeItem middle) // if splitted, add middle key to this node.
+                if (rightChild is KeyNodeItem) // if splitted, add middle key to this node.
                 {
+                    var middle = (KeyNodeItem) rightChild;
                     // +1 because middle is always right side which is fresh node. 
                     // items at index already point to left node after split. so middle must go after index.
                     index++;
@@ -90,8 +91,10 @@ namespace BPlusTree
                     }
                     else
                     {
+                        InternalNode leftSibling;
+                        InternalNode rightSibling;
                         // if left sbiling has spacem, spill left child of this item to left sibling.
-                        if (CanSpillTo(relatives.LeftSibling, out var leftSibling))
+                        if (CanSpillTo(relatives.LeftSibling, out leftSibling))
                         {
                             #region Fix Pointers after share
                             // give first item to left sibling.
@@ -116,7 +119,7 @@ namespace BPlusTree
                             Validate(this);
                             Validate(leftSibling);
                         }
-                        else if (CanSpillTo(relatives.RightSibling, out var rightSibling)) // if right sibling has space
+                        else if (CanSpillTo(relatives.RightSibling, out rightSibling)) // if right sibling has space
                         {
                             #region Fix Pointers after share
                             // give last item to right sibling.
@@ -196,15 +199,15 @@ namespace BPlusTree
                             Validate(rightNode);
                         }
                     }
-
-                    bool CanSpillTo(Node node, out InternalNode inode)
-                    {
-                        inode = (InternalNode)node;
-                        return inode?.IsFull == false;
-                    }
                 }
 
                 return rightChild;
+            }
+
+            private bool CanSpillTo(Node node, out InternalNode inode)
+            {
+                inode = (InternalNode)node;
+                return inode?.IsFull == false;
             }
 
             #endregion
@@ -230,7 +233,9 @@ namespace BPlusTree
 
                     if (!Items.IsHalfFull) // borrow or merge
                     {
-                        if (CanBorrowFrom(relatives.LeftSibling, out InternalNode leftSibling))
+                        InternalNode leftSibling;
+                        InternalNode rightSibling;
+                        if (CanBorrowFrom(relatives.LeftSibling, out leftSibling))
                         {
                             var last = leftSibling.Items.PopLast();
                             
@@ -245,7 +250,7 @@ namespace BPlusTree
                             Validate(this);
                             Validate(leftSibling);
                         }
-                        else if (CanBorrowFrom(relatives.RightSibling, out InternalNode rightSibling))
+                        else if (CanBorrowFrom(relatives.RightSibling, out rightSibling))
                         {
                             var first = rightSibling.Items.PopFirst();
 
@@ -283,16 +288,16 @@ namespace BPlusTree
                             }
                         }
                     }
-
-                    bool CanBorrowFrom(Node node, out InternalNode inode)
-                    {
-                        inode = (InternalNode)node;
-                        if (inode == null) return false;
-                        return inode.Items.Count > inode.Items.Capacity / 2;
-                    }
                 }
 
                 return merge; // true if merge happened.
+            }
+
+            private bool CanBorrowFrom(Node node, out InternalNode inode)
+            {
+                inode = (InternalNode)node;
+                if (inode == null) return false;
+                return inode.Items.Count > inode.Items.Capacity / 2;
             }
 
             #endregion

@@ -20,7 +20,7 @@ namespace BPlusTree
 
             foreach (var keyValuePair in WordLookup.AsPairEnumerable())
             {
-                Console.WriteLine("foreach Key:{0}, Value={1} ", keyValuePair.Key, keyValuePair.Value);
+                Console.WriteLine("foreach Key:{0}, Value={1} ", keyValuePair.Item1, keyValuePair.Item2);
             }
             
             // WordLookup.Remove("Hello", out v);
@@ -45,7 +45,7 @@ namespace BPlusTree
             BPTree<string, string> WordLookup = new BPTree<string, string>.Builder().Build();
             // BTreeDictionary<string, string> WordLookup = new BTreeDictionary<string, string>();
             WordLookup.Add("Hello", "Cool World!");
-            // WordLookup.Add("Hello", "Cooler World!");
+            WordLookup.Add("Hello1", "Cooler World!");
             WordLookup.Add("Brown", "Fox!");
             WordLookup.Add("Foo", "Bar");
             string v;
@@ -55,7 +55,14 @@ namespace BPlusTree
 
             foreach (var keyValuePair in WordLookup.AsPairEnumerable())
             {
-                Console.WriteLine("foreach Key:{0}, Value={1} ", keyValuePair.Key, keyValuePair.Value);
+                Console.WriteLine("tuple Key:{0}, Value={1} ", keyValuePair.Item1, keyValuePair.Item2);
+            }
+
+
+            int index = 0;
+            foreach (var value in WordLookup)
+            {
+                Console.WriteLine("value index:{0}, Value={1} ", index++, value);
             }
 
             WordLookup.Remove("Hello", out v);

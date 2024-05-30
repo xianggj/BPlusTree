@@ -18,7 +18,12 @@ namespace BPlusTree
 
             private DebugView(BPTree<TKey, TValue> tree)
             {
-                _tree = tree ?? throw new ArgumentNullException(nameof(tree));
+                if (null == tree)
+                {
+                    throw new ArgumentNullException(nameof(tree)); 
+                }
+
+                _tree = tree;
             }
             
             public Node Root => _tree.Root;
@@ -28,16 +33,16 @@ namespace BPlusTree
                 get
                 {
                     return GetEnumerable().ToArray();
+                }
+            }
 
-                    IEnumerable<LeafNode> GetEnumerable()
-                    {
-                        LeafNode leaf = _tree.LinkList;
-                        while (leaf != null)
-                        {
-                            yield return leaf;
-                            leaf = leaf.Next;
-                        }
-                    }
+            private IEnumerable<LeafNode> GetEnumerable()
+            {
+                LeafNode leaf = _tree.LinkList;
+                while (leaf != null)
+                {
+                    yield return leaf;
+                    leaf = leaf.Next;
                 }
             }
 
@@ -45,17 +50,17 @@ namespace BPlusTree
             {
                 get
                 {
-                    return GetEnumerable().ToArray();
+                    return GetEnumerable2().ToArray();
+                }
+            }
 
-                    IEnumerable<LeafNode> GetEnumerable()
-                    {
-                        LeafNode leaf = _tree.ReverseLinkList;
-                        while (leaf != null)
-                        {
-                            yield return leaf;
-                            leaf = leaf.Previous;
-                        }
-                    }
+            private IEnumerable<LeafNode> GetEnumerable2()
+            {
+                LeafNode leaf = _tree.ReverseLinkList;
+                while (leaf != null)
+                {
+                    yield return leaf;
+                    leaf = leaf.Previous;
                 }
             }
         }
@@ -79,7 +84,12 @@ namespace BPlusTree
 
                 private DebugView(InternalNode node)
                 {
-                    _node = node ?? throw new ArgumentNullException(nameof(node));
+                    if (null == node)
+                    {
+                        throw new ArgumentNullException(nameof(node));   
+                    }
+
+                    _node = node;
                 }
                 
                 [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
@@ -87,17 +97,17 @@ namespace BPlusTree
                 {
                     get
                     {
-                        return GetEnumerable().ToArray();
-                        
-                        IEnumerable<KeyNodeItemView> GetEnumerable()
-                        {
-                            var left = _node.Left;
-                            foreach (var x in _node.Items)
-                            {
-                                yield return new KeyNodeItemView(x.Key, left, x.Right);
-                                left = x.Right;
-                            }
-                        }
+                        return GetEnumerable3().ToArray();
+                    }
+                }
+
+                private IEnumerable<KeyNodeItemView> GetEnumerable3()
+                {
+                    var left = _node.Left;
+                    foreach (var x in _node.Items)
+                    {
+                        yield return new KeyNodeItemView(x.Key, left, x.Right);
+                        left = x.Right;
                     }
                 }
             }
@@ -134,7 +144,12 @@ namespace BPlusTree
 
                 private DebugView(LeafNode node)
                 {
-                    _node = node ?? throw new ArgumentNullException(nameof(node));
+                    if (null == node)
+                    {
+                        throw new ArgumentNullException(nameof(node));   
+                    }
+
+                    _node = node;
                 }
 
                 public RingArray<KeyValueItem> Items => _node.Items;

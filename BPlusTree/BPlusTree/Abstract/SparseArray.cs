@@ -10,16 +10,18 @@ namespace BPlusTree
     public class SparseArray<K, T> : BPTree<K, RingArray<T>>
     {
         #region Fields/Properties
-        
-        private static readonly Func<(K, T arg), RingArray<T>> _add = t => RingArray<T>.NewArray(Enumerable.Repeat(t.arg, 1), 4) ;
-        private static readonly Func<(K, T arg, RingArray<T> oldValue), RingArray<T>> _update = t =>
+
+        private static readonly Func<ValueTuple<K, T>, RingArray<T>> _add = t =>
+            RingArray<T>.NewArray(Enumerable.Repeat(t.Item2, 1), 4);
+
+        private static readonly Func<ValueTuple<K, T, RingArray<T>>, RingArray<T>> _update = t =>
         {
-            t.oldValue.Add(t.arg);
-            return t.oldValue;
+            t.Item3.Add(t.Item2);
+            return t.Item3;
         };
 
-        public new(K Key, IEnumerable<T> Values) Last => base.Last;
-        public new(K Key, IEnumerable<T> Values) First => base.First;
+        public new ValueTuple<K, RingArray<T>> Last => base.Last;
+        public new ValueTuple<K, RingArray<T>> First => base.First;
 
         #endregion
 
@@ -28,7 +30,7 @@ namespace BPlusTree
         /// <summary>
         /// initializes a new <see cref="SparseArray{T}"/>.
         /// </summary>
-        public SparseArray(IComparer<K> keyComparer = null, int internalNodeCapacity = 32, int leafCapacity = 32) 
+        public SparseArray(IComparer<K> keyComparer = null, int internalNodeCapacity = 32, int leafCapacity = 32)
             : base(keyComparer, internalNodeCapacity, leafCapacity)
         {
         }
@@ -36,11 +38,12 @@ namespace BPlusTree
         /// <summary>
         /// initializes a new <see cref="SparseArray{T}"/>.
         /// </summary>
-        public SparseArray(IEnumerable<(K key, T value)> source, IComparer<K> keyComparer = null, int internalNodeCapacity = 32, int leafCapacity = 32)
+        public SparseArray(IEnumerable<ValueTuple<K, T>> source, IComparer<K> keyComparer = null,
+            int internalNodeCapacity = 32, int leafCapacity = 32)
             : this(keyComparer, internalNodeCapacity, leafCapacity)
         {
             var builder = new Builder(this);
-            foreach ((K key, T value) in source) builder.Add(key, value);
+            foreach (ValueTuple<K, T> t in source) builder.Add(t.Item1, t.Item2);
             builder.Build();
         }
 
@@ -63,7 +66,7 @@ namespace BPlusTree
         /// <summary>
         /// returns an enumerable for this sparse array.
         /// </summary>
-        public new IEnumerable<(K Key, T Value)> AsPairEnumerable(bool moveForward = true)
+        public new IEnumerable<ValueTuple<K, T>> AsPairEnumerable(bool moveForward = true)
         {
             return GetEnumerable(base.AsPairEnumerable(moveForward), moveForward);
         }
@@ -73,18 +76,19 @@ namespace BPlusTree
         /// </summary>
         /// <typeparam name="TCast">target type to cast items while enumerating</typeparam>
         /// <param name="filter">if true is passed, filters the sequence otherwise casts the sequence values.</param>
-        public new IEnumerable<(K Key, TCast Value)> AsPairEnumerable<TCast>(bool filter = true, bool moveForward = true)
+        public new IEnumerable<ValueTuple<K,TCast>> AsPairEnumerable<TCast>(bool filter = true,
+            bool moveForward = true)
         {
             var enumerable = AsPairEnumerable(moveForward);
-            if (filter) enumerable = enumerable.Where(x => x.Value is TCast);
-            return enumerable.Select(x => (x.Key, (TCast)(object)x.Value));
+            if (filter) enumerable = enumerable.Where(x => x.Item2 is TCast);
+            return enumerable.Select(x => ValueTuple.Create(x.Item1, (TCast) (object) x.Item2));
         }
 
         /// <summary>
         /// returns an enumerable for this sparse array.
         /// </summary>
         /// <param name="start">start of enumerable.</param>
-        public new IEnumerable<(K Key, T Value)> AsPairEnumerable(K start, bool moveForward = true)
+        public new IEnumerable<ValueTuple<K,T>> AsPairEnumerable(K start, bool moveForward = true)
         {
             return GetEnumerable(base.AsPairEnumerable(start, moveForward), moveForward);
         }
@@ -95,17 +99,20 @@ namespace BPlusTree
         /// <typeparam name="TCast">target type to cast items while enumerating</typeparam>
         /// <param name="start">start of enumerable.</param>
         /// <param name="filter">if true is passed, filters the sequence otherwise casts the sequence values.</param>
-        public new IEnumerable<(K Key, TCast Value)> AsPairEnumerable<TCast>(K start, bool filter = true, bool moveForward = true)
+        public new IEnumerable<ValueTuple<K,TCast>> AsPairEnumerable<TCast>(K start, bool filter = true,
+            bool moveForward = true)
         {
             var enumerable = AsPairEnumerable(start, moveForward);
-            if (filter) enumerable = enumerable.Where(x => x.Value is TCast);
-            return enumerable.Select(x => (x.Key, (TCast)(object)x.Value));
+            if (filter) enumerable = enumerable.Where(x => x.Item2 is TCast);
+            return enumerable.Select(x => ValueTuple.Create(x.Item1, (TCast) (object) x.Item2));
         }
 
-        private IEnumerable<(K Key, T Value)> GetEnumerable(IEnumerable<(K Key, RingArray<T> Values)> enumerable, bool moveForward)
+        private IEnumerable<ValueTuple<K,T>> GetEnumerable(IEnumerable<ValueTuple<K,RingArray<T>>> enumerable,
+            bool moveForward)
         {
-            return moveForward ? enumerable.SelectMany(x => x.Values, (x,y) => (x.Key, y))
-                               : enumerable.SelectMany(x => x.Values.ToReversingList(), (x, y) => (x.Key, y));
+            return moveForward
+                ? enumerable.SelectMany(x => x.Item2, (x, y) => ValueTuple.Create(x.Item1, y))
+                : enumerable.SelectMany(x => x.Item2.ToReversingList(), (x, y) => ValueTuple.Create(x.Item1, y));
         }
 
         /// <summary>
@@ -113,7 +120,7 @@ namespace BPlusTree
         /// </summary>
         public new IEnumerable<T> AsEnumerable(bool moveForward = true)
         {
-            return AsPairEnumerable(moveForward).Select(pair => pair.Value);
+            return AsPairEnumerable(moveForward).Select(pair => pair.Item2);
         }
 
         /// <summary>
@@ -122,7 +129,7 @@ namespace BPlusTree
         /// <param name="start">start of enumerable.</param>
         public new IEnumerable<T> AsEnumerable(K start, bool moveForward = true)
         {
-            return AsPairEnumerable(start, moveForward).Select(pair => pair.Value);
+            return AsPairEnumerable(start, moveForward).Select(pair => pair.Item2);
         }
 
         public new IEnumerator<T> GetEnumerator()
@@ -137,7 +144,7 @@ namespace BPlusTree
         /// <summary>
         /// returns an enumerable for this sparse array.
         /// </summary>
-        public IEnumerable<(K Key, IEnumerable<T> Value)> AsGrouping(bool moveForward = true)
+        public IEnumerable<ValueTuple<K,IEnumerable<T>>> AsGrouping(bool moveForward = true)
         {
             return GetGrouping(base.AsPairEnumerable(moveForward), moveForward);
         }
@@ -147,18 +154,19 @@ namespace BPlusTree
         /// </summary>
         /// <typeparam name="TCast">target type to cast items while enumerating</typeparam>
         /// <param name="filter">if true is passed, filters the sequence otherwise casts the sequence values.</param>
-        public IEnumerable<(K Key, IEnumerable<TCast> Value)> AsGrouping<TCast>(bool filter = true, bool moveForward = true)
+        public IEnumerable<ValueTuple<K,IEnumerable<TCast>>> AsGrouping<TCast>(bool filter = true,
+            bool moveForward = true)
         {
             var enumerable = base.AsPairEnumerable(moveForward);
-            if (filter) return enumerable.Select(x => (x.Key, x.Value.OfType<TCast>()));
-            else return enumerable.Select(x => (x.Key, x.Value.Cast<TCast>()));
+            if (filter) return enumerable.Select(x => ValueTuple.Create(x.Item1, x.Item2.OfType<TCast>()));
+            else return enumerable.Select(x => ValueTuple.Create(x.Item1, x.Item2.Cast<TCast>()));
         }
 
         /// <summary>
         /// returns an enumerable for this sparse array.
         /// </summary>
         /// <param name="start">start of enumerable.</param>
-        public IEnumerable<(K Key, IEnumerable<T> Value)> AsGrouping(K start, bool moveForward = true)
+        public IEnumerable<ValueTuple<K,IEnumerable<T>>> AsGrouping(K start, bool moveForward = true)
         {
             return GetGrouping(base.AsPairEnumerable(start, moveForward), moveForward);
         }
@@ -169,17 +177,20 @@ namespace BPlusTree
         /// <typeparam name="TCast">target type to cast items while enumerating</typeparam>
         /// <param name="start">start of enumerable.</param>
         /// <param name="filter">if true is passed, filters the sequence otherwise casts the sequence values.</param>
-        public IEnumerable<(K Key, IEnumerable<TCast> Value)> AsGrouping<TCast>(K start, bool filter = true, bool moveForward = true)
+        public IEnumerable<ValueTuple<K,IEnumerable<TCast>>> AsGrouping<TCast>(K start, bool filter = true,
+            bool moveForward = true)
         {
             var enumerable = base.AsPairEnumerable(start, moveForward);
-            if (filter) return enumerable.Select(x => (x.Key, x.Value.OfType<TCast>()));
-            else return enumerable.Select(x => (x.Key, x.Value.Cast<TCast>()));
+            if (filter) return enumerable.Select(x => ValueTuple.Create(x.Item1, x.Item2.OfType<TCast>()));
+            else return enumerable.Select(x =>ValueTuple.Create(x.Item1, x.Item2.Cast<TCast>()));
         }
 
-        private IEnumerable<(K Key, IEnumerable<T> Value)> GetGrouping(IEnumerable<(K Key, RingArray<T> Values)> enumerable, bool moveForward)
+        private IEnumerable<ValueTuple<K,IEnumerable<T>>> GetGrouping(
+            IEnumerable<ValueTuple<K,RingArray<T>>> enumerable, bool moveForward)
         {
-            return moveForward ? enumerable.Select(x => (x.Key, x.Values.ToReadOnlyList()))
-                               : enumerable.Select(x => (x.Key, x.Values.ToReversingReadOnlyList()));
+            return moveForward
+                ? enumerable.Select(x => ValueTuple.Create(x.Item1, x.Item2.ToReadOnlyList()))
+                : enumerable.Select(x => ValueTuple.Create(x.Item1, x.Item2.ToReversingReadOnlyList()));
         }
 
         #endregion
@@ -189,7 +200,7 @@ namespace BPlusTree
         internal new sealed class Builder // todo make this public, use builder interface.
         {
             private BPTree<K, RingArray<T>>.Builder builder;
-            
+
             public Builder(SparseArray<K, T> tree)
             {
                 builder = new BPTree<K, RingArray<T>>.Builder(tree);

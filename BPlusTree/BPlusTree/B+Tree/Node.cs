@@ -23,7 +23,7 @@ namespace BPlusTree
             /// all nodes merge to left sibling. if left most child underflows, its right sibling is merged to left most child.
             /// </summary>
             public abstract bool Remove(ref RemoveArguments args, ref NodeRelatives relatives);
-            
+
             /// <summary>
             /// finds index of child or value with specified key. if key is not found, complement index of nearest item is returned.
             /// </summary>
@@ -38,7 +38,7 @@ namespace BPlusTree
             /// find nearest child with the key.
             /// </summary>
             public abstract Node GetNearestChild(TKey key, NodeComparer comparer);
-            
+
             public abstract TKey FirstKey { get; }
 
             /// <summary>
@@ -55,7 +55,7 @@ namespace BPlusTree
             /// true if node contains items at least half of its capacity. (Length >= Capacity/2)
             /// </summary>
             public abstract bool IsHalfFull { get; }
-            
+
             /// <summary>
             /// number of items in this node.
             /// </summary>
@@ -74,13 +74,13 @@ namespace BPlusTree
         {
             public readonly TKey Key;
             public readonly TValue Value;
-            
+
             public KeyValueItem(TKey key, TValue value)
             {
                 Key = key;
                 Value = value;
             }
-            
+
             public static void ChangeValue(ref KeyValueItem item, TValue newValue)
             {
                 item = new KeyValueItem(item.Key, newValue);
@@ -105,7 +105,7 @@ namespace BPlusTree
                 Key = key;
                 Right = right;
             }
-            
+
             public static void ChangeKey(ref KeyNodeItem item, TKey newKey)
             {
                 item = new KeyNodeItem(newKey, item.Right);
@@ -117,12 +117,12 @@ namespace BPlusTree
                 ChangeKey(ref x, y.Key);
                 ChangeKey(ref y, xKey);
             }
-            
+
             public static void ChangeRight(ref KeyNodeItem item, Node newRight)
             {
                 item = new KeyNodeItem(item.Key, newRight);
             }
-            
+
             public static void SwapRightWith(ref KeyNodeItem item, ref Node pointer)
             {
                 var temp = pointer;
@@ -132,7 +132,7 @@ namespace BPlusTree
         }
 
         #endregion
-        
+
         #region Key Comparer
 
         /// <summary>
@@ -165,8 +165,8 @@ namespace BPlusTree
         {
             public readonly TKey Key;
             private readonly TArg Arg; // optional argument, can be TValue or any helper value.
-            private readonly Func<(TKey key, TArg arg), TValue> AddFunction;
-            private readonly Func<(TKey key, TArg arg, TValue oldValue), TValue> UpdateFunction;
+            private readonly Func<ValueTuple<TKey, TArg>, TValue> AddFunction;
+            private readonly Func<ValueTuple<TKey, TArg, TValue>, TValue> UpdateFunction;
             public readonly NodeComparer Comparer;
 
             /// <summary>
@@ -177,17 +177,17 @@ namespace BPlusTree
             public TValue GetValue() // get value
             {
                 Added = true;
-                return AddFunction((Key, Arg));
+                return AddFunction(ValueTuple.Create(Key, Arg));
             }
 
             public TValue GetUpdateValue(TValue oldVal) // get update value
             {
-                return UpdateFunction((Key, Arg, oldVal));
+                return UpdateFunction(ValueTuple.Create(Key, Arg, oldVal));
             }
 
             public InsertArguments(ref TKey key, ref TArg arg,
-                ref Func<(TKey key, TArg arg), TValue> addFunction,
-                ref Func<(TKey key, TArg arg, TValue oldValue), TValue> updateValue, NodeComparer comparer)
+                ref Func<ValueTuple<TKey, TArg>, TValue> addFunction,
+                ref Func<ValueTuple<TKey, TArg, TValue>, TValue> updateValue, NodeComparer comparer)
             {
                 Key = key;
                 Arg = arg;
@@ -266,7 +266,7 @@ namespace BPlusTree
              *         /              \    /    
              *   [LeftSibling]     [Node][RightSibling]  
             */
-            
+
             public readonly Node LeftSibling;
             public readonly Node RightSibling;
 
@@ -300,7 +300,8 @@ namespace BPlusTree
             /// </summary>
             public readonly bool HasTrueRightSibling;
 
-            private NodeRelatives(InternalNode leftAncestor, int leftAncestorIndex, Node leftSibling, bool hasTrueLeftSibling,
+            private NodeRelatives(InternalNode leftAncestor, int leftAncestorIndex, Node leftSibling,
+                bool hasTrueLeftSibling,
                 InternalNode rightAncestor, int rightAncestorIndex, Node rightSibling, bool hasTrueRightSibling)
             {
                 LeftAncestor = leftAncestor;
@@ -317,7 +318,8 @@ namespace BPlusTree
             /// <summary>
             /// creates new relatives for child node.
             /// </summary>
-            public static NodeRelatives Create(Node child, int index, InternalNode parent, ref NodeRelatives parentRelatives)
+            public static NodeRelatives Create(Node child, int index, InternalNode parent,
+                ref NodeRelatives parentRelatives)
             {
                 Debug.Assert(index >= -1 && index < parent.Length);
 
@@ -326,12 +328,12 @@ namespace BPlusTree
                 int leftAncestorIndex, rightAncestorIndex;
                 Node leftSibling, rightSibling;
                 bool hasTrueLeftSibling, hasTrueRightSibling;
-                
+
                 if (index == -1) // if child is left most, use left cousin as left sibling.
                 {
                     leftAncestor = parentRelatives.LeftAncestor;
                     leftAncestorIndex = parentRelatives.LeftAncestorIndex;
-                    leftSibling = ((InternalNode)parentRelatives.LeftSibling)?.GetLastChild();
+                    leftSibling = ((InternalNode) parentRelatives.LeftSibling)?.GetLastChild();
                     hasTrueLeftSibling = false;
 
                     rightAncestor = parent;
@@ -339,7 +341,7 @@ namespace BPlusTree
                     rightSibling = parent.GetChild(rightAncestorIndex);
                     hasTrueRightSibling = true;
                 }
-                else if(index == parent.Length - 1) // if child is right most, use right cousin as right sibling.
+                else if (index == parent.Length - 1) // if child is right most, use right cousin as right sibling.
                 {
                     leftAncestor = parent;
                     leftAncestorIndex = index;
@@ -348,7 +350,7 @@ namespace BPlusTree
 
                     rightAncestor = parentRelatives.RightAncestor;
                     rightAncestorIndex = parentRelatives.RightAncestorIndex;
-                    rightSibling = ((InternalNode)parentRelatives.RightSibling)?.GetFirstChild();
+                    rightSibling = ((InternalNode) parentRelatives.RightSibling)?.GetFirstChild();
                     hasTrueRightSibling = false;
                 }
                 else // child is not right most nor left most.
@@ -365,7 +367,7 @@ namespace BPlusTree
                 }
 
                 return new NodeRelatives(leftAncestor, leftAncestorIndex, leftSibling, hasTrueLeftSibling,
-                    rightAncestor, rightAncestorIndex , rightSibling, hasTrueRightSibling);
+                    rightAncestor, rightAncestorIndex, rightSibling, hasTrueRightSibling);
             }
         }
 
