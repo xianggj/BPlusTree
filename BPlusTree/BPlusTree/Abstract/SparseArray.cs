@@ -18,8 +18,8 @@ namespace BPlusTree
             return t.oldValue;
         };
 
-        public new(K Key, IReadOnlyList<T> Values) Last => base.Last;
-        public new(K Key, IReadOnlyList<T> Values) First => base.First;
+        public new(K Key, IEnumerable<T> Values) Last => base.Last;
+        public new(K Key, IEnumerable<T> Values) First => base.First;
 
         #endregion
 
@@ -137,7 +137,7 @@ namespace BPlusTree
         /// <summary>
         /// returns an enumerable for this sparse array.
         /// </summary>
-        public IEnumerable<(K Key, IReadOnlyList<T> Value)> AsGrouping(bool moveForward = true)
+        public IEnumerable<(K Key, IEnumerable<T> Value)> AsGrouping(bool moveForward = true)
         {
             return GetGrouping(base.AsPairEnumerable(moveForward), moveForward);
         }
@@ -158,7 +158,7 @@ namespace BPlusTree
         /// returns an enumerable for this sparse array.
         /// </summary>
         /// <param name="start">start of enumerable.</param>
-        public IEnumerable<(K Key, IReadOnlyList<T> Value)> AsGrouping(K start, bool moveForward = true)
+        public IEnumerable<(K Key, IEnumerable<T> Value)> AsGrouping(K start, bool moveForward = true)
         {
             return GetGrouping(base.AsPairEnumerable(start, moveForward), moveForward);
         }
@@ -176,7 +176,7 @@ namespace BPlusTree
             else return enumerable.Select(x => (x.Key, x.Value.Cast<TCast>()));
         }
 
-        private IEnumerable<(K Key, IReadOnlyList<T> Value)> GetGrouping(IEnumerable<(K Key, RingArray<T> Values)> enumerable, bool moveForward)
+        private IEnumerable<(K Key, IEnumerable<T> Value)> GetGrouping(IEnumerable<(K Key, RingArray<T> Values)> enumerable, bool moveForward)
         {
             return moveForward ? enumerable.Select(x => (x.Key, x.Values.ToReadOnlyList()))
                                : enumerable.Select(x => (x.Key, x.Values.ToReversingReadOnlyList()));

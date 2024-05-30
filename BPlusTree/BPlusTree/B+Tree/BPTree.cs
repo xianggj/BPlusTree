@@ -122,7 +122,7 @@ namespace BPlusTree
         /// </summary>
         public bool AddOrUpdateFromArg<TArg>(TKey key, TArg arg, Func<(TKey key, TArg arg), TValue> addFunction, Func<(TKey key, TArg arg, TValue oldValue), TValue> updateFunction)
         {
-            var args = new InsertArguments<TArg>(key, arg, addFunction, updateFunction, _comparer);
+            var args = new InsertArguments<TArg>(ref key,ref arg, ref addFunction,ref  updateFunction, _comparer);
             AddOrUpdateCore(ref args);
             return args.Added;
         }
@@ -176,7 +176,8 @@ namespace BPlusTree
                 return;
             }
 
-            var rightSplit = Root.Insert(ref args, new NodeRelatives());
+            NodeRelatives nr = new NodeRelatives();
+            var rightSplit = Root.Insert(ref args,ref nr);
 
             if (args.Added) Count++;
             _version++;
@@ -205,7 +206,7 @@ namespace BPlusTree
         /// </summary>
         public bool RemoveFirst(out TValue first)
         {
-            first = default;
+            first = default(TValue);
             if (Count == 0) return false;
             return Remove(First.Key, out first);
         }
@@ -215,7 +216,7 @@ namespace BPlusTree
         /// </summary>
         public bool RemoveLast(out TValue last)
         {
-            last = default;
+            last = default(TValue);
             if (Count == 0) return false;
             return Remove(Last.Key, out last);
         }
@@ -225,7 +226,7 @@ namespace BPlusTree
         /// </summary>
         public bool Remove(TKey key, out TValue value)
         {
-            var args = new RemoveArguments(key, _comparer);
+            var args = new RemoveArguments(ref key, _comparer);
             RemoveCore(ref args);
             value = args.Value;
             return args.Removed;
@@ -266,7 +267,8 @@ namespace BPlusTree
                 return;
             }
 
-            var merge = Root.Remove(ref args, new NodeRelatives());
+            var nr = new NodeRelatives();
+            var merge = Root.Remove(ref args, ref nr);
 
             if (args.Removed)
             {
@@ -330,7 +332,7 @@ namespace BPlusTree
         /// </summary>
         public bool TryGet(TKey key, out TValue value)
         {
-            value = default;
+            value = default(TValue);
             var leaf = FindLeaf(key, out var index);
             if (index >= 0) value = leaf.Items[index].Value;
             return index >= 0;
@@ -354,7 +356,7 @@ namespace BPlusTree
 
             var node = Root;
             while (!node.IsLeaf) node = node.GetNearestChild(key, _comparer);
-            index = node.Find(key, _comparer);
+            index = node.Find(ref key, _comparer);
             return (LeafNode)node;
         }
 

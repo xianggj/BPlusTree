@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace BPlusTree
 {
-    internal sealed class ReversingList<T> : IList<T>, IReadOnlyList<T>
+    internal sealed class ReversingList<T> : IList<T>, IEnumerable<T>
     {
         private readonly IList<T> source;
         private int version;
@@ -115,7 +115,7 @@ namespace BPlusTree
                 this.source = source;
                 version = source?.version ?? 0;
                 position = 0;
-                current = default;
+                current = default(T);
             }
 
             /// <inheritdoc />
@@ -149,7 +149,7 @@ namespace BPlusTree
                 else
                 {
                     position = source.Count + 1; // end marker
-                    current = default;
+                    current = default(T);
                     return false;
                 }
             }
@@ -159,7 +159,7 @@ namespace BPlusTree
             {
                 version = source?.version ?? 0;
                 position = 0;
-                current = default;
+                current = default(T);
             }
 
             object IEnumerator.Current => Current;

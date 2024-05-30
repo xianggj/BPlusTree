@@ -38,9 +38,9 @@ namespace BPlusTree
 
             #region Find/Traverse
 
-            public override int Find(in TKey key, in NodeComparer comparer)
+            public override int Find(ref TKey key, NodeComparer comparer)
             {
-                return Items.BinarySearch(new KeyValueItem(key, default), comparer); // find value in this bucket
+                return Items.BinarySearch(new KeyValueItem(key, default(TValue)), comparer); // find value in this bucket
             }
 
             public override Node GetChild(int index) => null;
@@ -50,11 +50,12 @@ namespace BPlusTree
 
             #region Insert
 
-            public override KeyNodeItem? Insert<TArg>(ref InsertArguments<TArg> args, in NodeRelatives relatives)
+            public override KeyNodeItem? Insert<TArg>(ref InsertArguments<TArg> args, ref NodeRelatives relatives)
             {
                 KeyNodeItem? rightLeaf = null;
 
-                var index = Find(args.Key, args.Comparer);
+                var key = args.Key;
+                var index = Find(ref key, args.Comparer);
 
                 if (index < 0)
                 {
@@ -152,10 +153,11 @@ namespace BPlusTree
 
             #region Remove
 
-            public override bool Remove(ref RemoveArguments args, in NodeRelatives relatives)
+            public override bool Remove(ref RemoveArguments args, ref NodeRelatives relatives)
             {
                 var merge = false;
-                var index = Find(args.Key, args.Comparer);
+                var key = args.Key;
+                var index = Find(ref key, args.Comparer);
 
                 if (index >= 0)
                 {

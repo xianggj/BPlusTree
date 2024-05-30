@@ -16,18 +16,18 @@ namespace BPlusTree
             /// <summary>
             /// inserts an item to a node. if node splits, right split is returned other wise null is returned.
             /// </summary>
-            public abstract KeyNodeItem? Insert<TArg>(ref InsertArguments<TArg> args, in NodeRelatives relatives);
+            public abstract KeyNodeItem? Insert<TArg>(ref InsertArguments<TArg> args, ref NodeRelatives relatives);
 
             /// <summary>
             /// removes an item from a node. if node merges, returns ture. other wise returns false. 
             /// all nodes merge to left sibling. if left most child underflows, its right sibling is merged to left most child.
             /// </summary>
-            public abstract bool Remove(ref RemoveArguments args, in NodeRelatives relatives);
+            public abstract bool Remove(ref RemoveArguments args, ref NodeRelatives relatives);
             
             /// <summary>
             /// finds index of child or value with specified key. if key is not found, complement index of nearest item is returned.
             /// </summary>
-            public abstract int Find(in TKey item, in NodeComparer comparer);
+            public abstract int Find(ref TKey item, NodeComparer comparer);
 
             /// <summary>
             /// get child of node at specified index. if used on leaf node it returns null.
@@ -70,7 +70,7 @@ namespace BPlusTree
         /// represents a value associated with a key.
         /// used for searching and storing items in leaf.
         /// </summary>
-        private readonly partial struct KeyValueItem
+        private partial struct KeyValueItem
         {
             public readonly TKey Key;
             public readonly TValue Value;
@@ -95,7 +95,7 @@ namespace BPlusTree
         /// represents a key and a pointer to right child.
         /// used for searching and storing items in internal nodes.
         /// </summary>
-        private readonly partial struct KeyNodeItem
+        private partial struct KeyNodeItem
         {
             public readonly TKey Key;
             public readonly Node Right;
@@ -161,7 +161,7 @@ namespace BPlusTree
         /// <summary>
         /// contains reaonly arguments for insert operation.
         /// </summary>
-        private ref struct InsertArguments<TArg>
+        private struct InsertArguments<TArg>
         {
             public readonly TKey Key;
             private readonly TArg Arg; // optional argument, can be TValue or any helper value.
@@ -185,9 +185,9 @@ namespace BPlusTree
                 return UpdateFunction((Key, Arg, oldVal));
             }
 
-            public InsertArguments(in TKey key, in TArg arg,
-                in Func<(TKey key, TArg arg), TValue> addFunction,
-                in Func<(TKey key, TArg arg, TValue oldValue), TValue> updateValue, in NodeComparer comparer)
+            public InsertArguments(ref TKey key, ref TArg arg,
+                ref Func<(TKey key, TArg arg), TValue> addFunction,
+                ref Func<(TKey key, TArg arg, TValue oldValue), TValue> updateValue, NodeComparer comparer)
             {
                 Key = key;
                 Arg = arg;
@@ -206,7 +206,7 @@ namespace BPlusTree
         /// <summary>
         /// contains arguments for remove operation.
         /// </summary>
-        private ref struct RemoveArguments
+        private struct RemoveArguments
         {
             public readonly TKey Key;
             public readonly NodeComparer Comparer;
@@ -221,12 +221,12 @@ namespace BPlusTree
             /// </summary>
             public bool Removed { get; private set; }
 
-            public RemoveArguments(in TKey key, in NodeComparer comparer)
+            public RemoveArguments(ref TKey key, NodeComparer comparer)
             {
                 Key = key;
                 Comparer = comparer;
 
-                Value = default;
+                Value = default(TValue);
                 Removed = false;
             }
 
@@ -245,7 +245,7 @@ namespace BPlusTree
         /// contains information about relatives of each node, such as ancestors and siblings.
         /// this information is used for borrow and spill operations.
         /// </summary>
-        private readonly ref struct NodeRelatives
+        private struct NodeRelatives
         {
             /*  Note: "/" is left pointer. "\" is right pointer.
              * 
@@ -317,7 +317,7 @@ namespace BPlusTree
             /// <summary>
             /// creates new relatives for child node.
             /// </summary>
-            public static NodeRelatives Create(Node child, int index, InternalNode parent, in NodeRelatives parentRelatives)
+            public static NodeRelatives Create(Node child, int index, InternalNode parent, ref NodeRelatives parentRelatives)
             {
                 Debug.Assert(index >= -1 && index < parent.Length);
 

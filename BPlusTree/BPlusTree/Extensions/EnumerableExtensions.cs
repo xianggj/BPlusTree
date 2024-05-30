@@ -12,7 +12,7 @@ namespace BPlusTree
         //    return new ReadOnlyDictionary<TKey, TValue>(source);
         //}
 
-        internal static IReadOnlyList<T> ToReadOnlyList<T>(this IList<T> source)
+        internal static IEnumerable<T> ToReadOnlyList<T>(this IList<T> source)
         {
             return new ReadOnlyCollection<T>(source);
         }
@@ -22,7 +22,7 @@ namespace BPlusTree
             return new ReversingList<T>(source);
         }
 
-        internal static IReadOnlyList<T> ToReversingReadOnlyList<T>(this IReadOnlyList<T> source)
+        internal static IEnumerable<T> ToReversingReadOnlyList<T>(this IList<T> source)
         {
             return new ReversingReadOnlyList<T>(source);
         }

@@ -4,11 +4,22 @@ using System.Collections.Generic;
 
 namespace BPlusTree
 {
-    internal sealed class ReversingReadOnlyList<T> : IReadOnlyList<T>
-    {
-        private readonly IReadOnlyList<T> source;
+    // public interface IReadOnlyCollection<out T> : IEnumerable<T>, IEnumerable
+    // {
+    //     int Count { get; }
+    // }
+    //
+    // public interface IReadOnlyList<out T> : IReadOnlyCollection<T>, IEnumerable<T>, IEnumerable
+    // {
+    //     T this[int index] { get; }
+    // }
 
-        public ReversingReadOnlyList(IReadOnlyList<T> source)
+
+    internal sealed class ReversingReadOnlyList<T> : IEnumerable<T>
+    {
+        private readonly IList<T> source;
+
+        public ReversingReadOnlyList(IList<T> source)
         {
             this.source = source;
         }
@@ -41,7 +52,7 @@ namespace BPlusTree
             {
                 this.source = source;
                 position = 0;
-                current = default;
+                current = default(T);
             }
 
             /// <inheritdoc />
@@ -50,7 +61,8 @@ namespace BPlusTree
                 get
                 {
                     if (source == null)
-                        throw new InvalidOperationException("enumerator has no array. it's either disposed or initialized with null array.");
+                        throw new InvalidOperationException(
+                            "enumerator has no array. it's either disposed or initialized with null array.");
                     if (position == 0)
                         throw new InvalidOperationException("enumerator cursor is not moved yet.");
                     if (position == source.Count + 1)
@@ -72,7 +84,7 @@ namespace BPlusTree
                 else
                 {
                     position = source.Count + 1; // end marker
-                    current = default;
+                    current = default(T);
                     return false;
                 }
             }
@@ -81,7 +93,7 @@ namespace BPlusTree
             public void Reset()
             {
                 position = 0;
-                current = default;
+                current = default(T);
             }
 
             object IEnumerator.Current => Current;

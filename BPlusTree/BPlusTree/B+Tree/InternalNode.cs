@@ -37,7 +37,7 @@ namespace BPlusTree
 
             #region Find/Traverse
 
-            public override int Find(in TKey key, in NodeComparer comparer)
+            public override int Find(ref TKey key, NodeComparer comparer)
             {
                 return Items.BinarySearch(new KeyNodeItem(key, null), comparer);
             }
@@ -49,7 +49,7 @@ namespace BPlusTree
 
             public override Node GetNearestChild(TKey key, NodeComparer comparer)
             {
-                var index = Find(key, comparer);
+                var index = Find(ref key, comparer);
                 if (index < 0) index = ~index - 1; // get next nearest item.
                 return GetChild(index);
             }
@@ -61,9 +61,10 @@ namespace BPlusTree
 
             #region Insert
 
-            public override KeyNodeItem? Insert<TArg>(ref InsertArguments<TArg> args, in NodeRelatives relatives)
+            public override KeyNodeItem? Insert<TArg>(ref InsertArguments<TArg> args, ref NodeRelatives relatives)
             {
-                var index = Find(args.Key, args.Comparer);
+                var key = args.Key;
+                var index = Find(ref key, args.Comparer);
 
                 // -1 because items smaller than key have to go inside left child. 
                 // since items at each index point to right child, index is decremented to get left child.
@@ -73,8 +74,8 @@ namespace BPlusTree
 
                 // get child to traverse through.
                 var child = GetChild(index);
-                var childRelatives = NodeRelatives.Create(child, index, this, relatives);
-                var rightChild = child.Insert(ref args, childRelatives);
+                var childRelatives = NodeRelatives.Create(child, index, this,ref relatives);
+                var rightChild = child.Insert(ref args, ref childRelatives);
 
                 if (rightChild is KeyNodeItem middle) // if splitted, add middle key to this node.
                 {
@@ -210,17 +211,18 @@ namespace BPlusTree
 
             #region Remove
 
-            public override bool Remove(ref RemoveArguments args, in NodeRelatives relatives)
+            public override bool Remove(ref RemoveArguments args, ref NodeRelatives relatives)
             {
                 var merge = false;
-                var index = Find(args.Key, args.Comparer);
+                var key = args.Key;
+                var index = Find(ref key, args.Comparer);
                 if (index < 0) index = ~index - 1;
 
                 Debug.Assert(index >= -1 && index < Items.Count);
 
                 var child = GetChild(index);
-                var childRelatives = NodeRelatives.Create(child, index, this, relatives);
-                var childMerged = child.Remove(ref args, childRelatives);
+                var childRelatives = NodeRelatives.Create(child, index, this, ref relatives);
+                var childMerged = child.Remove(ref args, ref childRelatives);
 
                 if (childMerged)
                 {

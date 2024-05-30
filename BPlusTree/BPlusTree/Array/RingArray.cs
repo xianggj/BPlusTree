@@ -13,7 +13,7 @@ namespace BPlusTree
     /// </summary>
     [DebuggerTypeProxy(typeof(RingArray<>.DebugView))]
     [DebuggerDisplay("Count = {Count}{IsRotated ? \", Rotated\" : System.String.Empty,nq}")]
-    public sealed class RingArray<T> : IList<T>, IReadOnlyList<T>
+    public sealed class RingArray<T> : IList<T>, IEnumerable<T>
     {
         private const int DefaultCapacity = 4;
 
@@ -917,7 +917,7 @@ namespace BPlusTree
                 this.array = array;
                 version = array?.version ?? 0;
                 position = 0;
-                current = default;
+                current = default(T);
             }
 
             /// <inheritdoc />
@@ -951,7 +951,7 @@ namespace BPlusTree
                 else
                 {
                     position = array.Count + 1; // end marker
-                    current = default;
+                    current = default(T);
                     return false;
                 }
             }
@@ -961,7 +961,7 @@ namespace BPlusTree
             {
                 version = array?.version ?? 0;
                 position = 0;
-                current = default;
+                current = default(T);
             }
 
             object IEnumerator.Current => Current;

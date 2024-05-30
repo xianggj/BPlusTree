@@ -10,7 +10,7 @@ namespace BPlusTree
         /// <summary>
         /// fast sign function that uses bitwise operations instead of branches.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        // [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int Sign(this int x) => (x >> 31) | 1;
     }
 }
