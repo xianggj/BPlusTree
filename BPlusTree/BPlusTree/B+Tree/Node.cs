@@ -148,10 +148,16 @@ namespace BPlusTree
             }
 
             /// <inheritdoc />
-            public int Compare(KeyNodeItem x, KeyNodeItem y) => KeyComparer.Compare(x.Key, y.Key);
+            public int Compare(KeyNodeItem x, KeyNodeItem y)
+            {
+                return KeyComparer.Compare(x.Key, y.Key);
+            }
 
             /// <inheritdoc />
-            public int Compare(KeyValueItem x, KeyValueItem y) => KeyComparer.Compare(x.Key, y.Key);
+            public int Compare(KeyValueItem x, KeyValueItem y)
+            {
+                return KeyComparer.Compare(x.Key, y.Key);
+            }
         }
 
         #endregion
@@ -187,7 +193,7 @@ namespace BPlusTree
 
             public InsertArguments(ref TKey key, ref TArg arg,
                 ref Func<ValueTuple<TKey, TArg>, TValue> addFunction,
-                ref Func<ValueTuple<TKey, TArg, TValue>, TValue> updateValue, NodeComparer comparer)
+                ref Func<ValueTuple<TKey, TArg, TValue>, TValue> updateValue, NodeComparer comparer) : this()
             {
                 Key = key;
                 Arg = arg;
@@ -221,7 +227,7 @@ namespace BPlusTree
             /// </summary>
             public bool Removed { get; private set; }
 
-            public RemoveArguments(ref TKey key, NodeComparer comparer)
+            public RemoveArguments(ref TKey key, NodeComparer comparer) : this()
             {
                 Key = key;
                 Comparer = comparer;
@@ -333,7 +339,7 @@ namespace BPlusTree
                 {
                     leftAncestor = parentRelatives.LeftAncestor;
                     leftAncestorIndex = parentRelatives.LeftAncestorIndex;
-                    leftSibling = ((InternalNode) parentRelatives.LeftSibling)?.GetLastChild();
+                    leftSibling = (InternalNode) parentRelatives.LeftSibling != null ? ((InternalNode) parentRelatives.LeftSibling).GetLastChild() : null;
                     hasTrueLeftSibling = false;
 
                     rightAncestor = parent;
@@ -350,7 +356,7 @@ namespace BPlusTree
 
                     rightAncestor = parentRelatives.RightAncestor;
                     rightAncestorIndex = parentRelatives.RightAncestorIndex;
-                    rightSibling = ((InternalNode) parentRelatives.RightSibling)?.GetFirstChild();
+                    rightSibling = (InternalNode) parentRelatives.RightSibling != null ? ((InternalNode) parentRelatives.RightSibling).GetFirstChild() : null;
                     hasTrueRightSibling = false;
                 }
                 else // child is not right most nor left most.

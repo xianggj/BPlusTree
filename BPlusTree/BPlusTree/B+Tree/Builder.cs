@@ -47,11 +47,11 @@ namespace BPlusTree
 
             #region Properties
 
-            public int InternalNodeCapacity { get; }
+            public int InternalNodeCapacity { get; private set; }
 
-            public int LeafCapacity { get; }
+            public int LeafCapacity { get; private set; }
 
-            public IComparer<TKey> KeyComparer { get; }
+            public IComparer<TKey> KeyComparer { get; private set; }
 
             #endregion
 
@@ -69,13 +69,13 @@ namespace BPlusTree
                 tree.LeafCapacity)
             {
                 _tree = tree;
-                if (tree?.Count > 0)
+                if (tree != null ? tree.Count > 0 : false)
                     _bulkLoading = _initialize = false; // if tree is already initialized bulkloading is not supported
             }
 
             public Builder(BPTree<TKey, TValue> tree, IEnumerable<ValueTuple<TKey, TValue>> source) : this(tree)
             {
-                if (source == null) throw new ArgumentNullException(nameof(source));
+                if (source == null) throw new ArgumentNullException("source");
 
                 foreach (var t in source) Add(t.Item1, t.Item2);
             }

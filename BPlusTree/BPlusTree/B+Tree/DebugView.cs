@@ -20,14 +20,17 @@ namespace BPlusTree
             {
                 if (null == tree)
                 {
-                    throw new ArgumentNullException(nameof(tree)); 
+                    throw new ArgumentNullException("tree"); 
                 }
 
                 _tree = tree;
             }
             
-            public Node Root => _tree.Root;
-            
+            public Node Root
+            {
+                get { return _tree.Root; }
+            }
+
             public LeafNode[] LinkList
             {
                 get
@@ -86,7 +89,7 @@ namespace BPlusTree
                 {
                     if (null == node)
                     {
-                        throw new ArgumentNullException(nameof(node));   
+                        throw new ArgumentNullException("node");   
                     }
 
                     _node = node;
@@ -117,13 +120,13 @@ namespace BPlusTree
             private struct KeyNodeItemView
             {
                 [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-                public TKey Key { get; }
-                public Node Left { get; }
-                public Node Right { get; }
+                public TKey Key { get; private set; }
+                public Node Left { get; private set;}
+                public Node Right { get; private set;}
 
-                public KeyNodeItemView(TKey key, Node left, Node right)
+                public KeyNodeItemView(TKey key, Node left, Node right) : this()
                 {
-                    Key = key;
+                    Key = key; //The 'this' object cannot be used before all of its fields are assigned to
                     Left = left;
                     Right = right;
                 }
@@ -146,15 +149,26 @@ namespace BPlusTree
                 {
                     if (null == node)
                     {
-                        throw new ArgumentNullException(nameof(node));   
+                        throw new ArgumentNullException("node");   
                     }
 
                     _node = node;
                 }
 
-                public RingArray<KeyValueItem> Items => _node.Items;
-                public LeafNode Next => _node.Next;
-                public LeafNode Previous => _node.Previous;
+                public RingArray<KeyValueItem> Items
+                {
+                    get { return _node.Items; }
+                }
+
+                public LeafNode Next
+                {
+                    get { return _node.Next; }
+                }
+
+                public LeafNode Previous
+                {
+                    get { return _node.Previous; }
+                }
             }
         }
 

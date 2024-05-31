@@ -29,16 +29,16 @@ namespace BPlusTree
 
         public static BPTree<TKey, TValue> ToBPTree<TKey, TValue>(this IEnumerable<TValue> source, Func<TValue, TKey> keySelector, IComparer<TKey> keyComparer = null)
         {
-            if (source == null) throw new ArgumentNullException(nameof(source));
-            if (keySelector == null) throw new ArgumentNullException(nameof(keySelector));
+            if (source == null) throw new ArgumentNullException("source");
+            if (keySelector == null) throw new ArgumentNullException("keySelector");
 
             return new BPTree<TKey, TValue>(source.Select(x => ValueTuple.Create(keySelector(x), x)), keyComparer);
         }
 
         public static SparseArray<TKey, TValue> ToSparseArray<TKey, TValue>(this IEnumerable<TValue> source, Func<TValue, TKey> keySelector, IComparer<TKey> keyComparer = null)
         {
-            if (source == null) throw new ArgumentNullException(nameof(source));
-            if (keySelector == null) throw new ArgumentNullException(nameof(keySelector));
+            if (source == null) throw new ArgumentNullException("source");
+            if (keySelector == null) throw new ArgumentNullException("keySelector");
 
             return new SparseArray<TKey, TValue>(source.Select(x => ValueTuple.Create(keySelector(x), x)), keyComparer);
         }

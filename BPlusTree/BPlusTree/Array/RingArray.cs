@@ -94,7 +94,7 @@ namespace BPlusTree
         /// <summary>
         /// constraints for this array.
         /// </summary>
-        public RingArrayConstraints Constraints { get; }
+        public RingArrayConstraints Constraints { get; private set; }
 
         /// <summary>
         /// retrieves last item from the array.
@@ -135,14 +135,14 @@ namespace BPlusTree
         /// <exception cref="ArgumentOutOfRangeException"></exception>
         public static RingArray<T> NewArray(int capacity = DefaultCapacity)
         {
-            if (capacity < 0) throw new ArgumentOutOfRangeException(nameof(capacity));
+            if (capacity < 0) throw new ArgumentOutOfRangeException("capacity");
             return new RingArray<T>(new T[capacity], 0, 0, RingArrayConstraints.None);
         }
 
         public static RingArray<T> NewArray(IEnumerable<T> source, int initialCapacity = DefaultCapacity)
         {
-            if (source == null) throw new ArgumentNullException(nameof(source));
-            if (initialCapacity < 0) throw new ArgumentOutOfRangeException(nameof(initialCapacity));
+            if (source == null) throw new ArgumentNullException("source");
+            if (initialCapacity < 0) throw new ArgumentOutOfRangeException("initialCapacity");
             var array = NewArray(initialCapacity);
             foreach (var x in source) array.PushLast(x);
             array.version = 0;
@@ -151,16 +151,16 @@ namespace BPlusTree
 
         public static RingArray<T> NewFixedCapacityArray(int capacity)
         {
-            if (capacity < 0) throw new ArgumentOutOfRangeException(nameof(capacity));
+            if (capacity < 0) throw new ArgumentOutOfRangeException("capacity");
             return new RingArray<T>(new T[capacity], 0, 0, RingArrayConstraints.FixedCapacity);
         }
 
         public static RingArray<T> NewFixedCapacityArray(IEnumerable<T> source, int additionalCapacity,
             int initialCapacity = DefaultCapacity)
         {
-            if (source == null) throw new ArgumentNullException(nameof(source));
-            if (additionalCapacity < 0) throw new ArgumentOutOfRangeException(nameof(additionalCapacity));
-            if (initialCapacity < 0) throw new ArgumentOutOfRangeException(nameof(initialCapacity));
+            if (source == null) throw new ArgumentNullException("source");
+            if (additionalCapacity < 0) throw new ArgumentOutOfRangeException("additionalCapacity");
+            if (initialCapacity < 0) throw new ArgumentOutOfRangeException("initialCapacity");
             var ring = NewArray(source, initialCapacity);
             if (additionalCapacity != 0) ring.Capacity = ring.Count + additionalCapacity;
             return new RingArray<T>(ring.array, ring.Count, ring.Start, RingArrayConstraints.FixedCapacity);
@@ -168,22 +168,22 @@ namespace BPlusTree
 
         public static RingArray<T> NewFixedSizeArray(int size)
         {
-            if (size < 0) throw new ArgumentOutOfRangeException(nameof(size));
+            if (size < 0) throw new ArgumentOutOfRangeException("size");
             return new RingArray<T>(new T[size], size, 0, RingArrayConstraints.FixedSize);
         }
 
         public static RingArray<T> NewFixedSizeArray(IEnumerable<T> source, int initialCapacity = DefaultCapacity)
         {
-            if (source == null) throw new ArgumentNullException(nameof(source));
-            if (initialCapacity < 0) throw new ArgumentOutOfRangeException(nameof(initialCapacity));
+            if (source == null) throw new ArgumentNullException("source");
+            if (initialCapacity < 0) throw new ArgumentOutOfRangeException("initialCapacity");
             var ring = NewFixedCapacityArray(source, 0, initialCapacity);
             return new RingArray<T>(ring.array, ring.Count, ring.Start, RingArrayConstraints.FixedSize);
         }
 
         public static RingArray<T> NewReadOnlyArray(IEnumerable<T> source, int initialCapacity = DefaultCapacity)
         {
-            if (source == null) throw new ArgumentNullException(nameof(source));
-            if (initialCapacity < 0) throw new ArgumentOutOfRangeException(nameof(initialCapacity));
+            if (source == null) throw new ArgumentNullException("source");
+            if (initialCapacity < 0) throw new ArgumentOutOfRangeException("initialCapacity");
             var ring = NewFixedSizeArray(source, initialCapacity);
             return new RingArray<T>(ring.array, ring.Count, ring.Start, RingArrayConstraints.ReadOnly);
         }
@@ -208,7 +208,7 @@ namespace BPlusTree
 
         private void InsertInternal(int index, T item)
         {
-            if (OutOfRangeExclusive(index)) throw new IndexOutOfRangeException(nameof(index));
+            if (OutOfRangeExclusive(index)) throw new IndexOutOfRangeException("index");
             if (Count >= Capacity) ExpandCapacity();
 
             var lsh = index; // length of left shift
@@ -248,7 +248,7 @@ namespace BPlusTree
         private T RemoveAtInternal(int index)
         {
             if (Count <= 0) throw new InvalidOperationException("no items to remove");
-            if (OutOfRange(index)) throw new IndexOutOfRangeException(nameof(index));
+            if (OutOfRange(index)) throw new IndexOutOfRangeException("index");
 
             var item = Get(index);
 
@@ -453,7 +453,7 @@ namespace BPlusTree
         {
             if (Constraints == RingArrayConstraints.ReadOnly)
                 throw new InvalidOperationException("can not modify readonly collection.");
-            if (OutOfRangeExclusive(index)) throw new IndexOutOfRangeException(nameof(index));
+            if (OutOfRangeExclusive(index)) throw new IndexOutOfRangeException("index");
 
             if (index == 0) return item;
             var value = PopFirstInternal();
@@ -469,7 +469,7 @@ namespace BPlusTree
         {
             if (Constraints == RingArrayConstraints.ReadOnly)
                 throw new InvalidOperationException("can not modify readonly collection.");
-            if (OutOfRangeExclusive(index)) throw new IndexOutOfRangeException(nameof(index));
+            if (OutOfRangeExclusive(index)) throw new IndexOutOfRangeException("index");
 
             if (index == Count) return item;
             var value = PopLastInternal();
@@ -666,14 +666,14 @@ namespace BPlusTree
         {
             get
             {
-                if (OutOfRange(index)) throw new IndexOutOfRangeException(nameof(index));
+                if (OutOfRange(index)) throw new IndexOutOfRangeException("index");
                 return Get(index);
             }
             set
             {
                 if (Constraints == RingArrayConstraints.ReadOnly)
                     throw new InvalidOperationException("can not modify readonly collection.");
-                if (OutOfRange(index)) throw new IndexOutOfRangeException(nameof(index));
+                if (OutOfRange(index)) throw new IndexOutOfRangeException("index");
                 Set(index, value);
                 version++;
             }
@@ -766,8 +766,8 @@ namespace BPlusTree
         private static void LeftShift(T[] x, int index, int length)
         {
             if (length == 0) return;
-            if (length < 0 || length > x.Length) throw new ArgumentOutOfRangeException(nameof(length));
-            if (index < 0 || index >= x.Length) throw new ArgumentOutOfRangeException(nameof(length));
+            if (length < 0 || length > x.Length) throw new ArgumentOutOfRangeException("length");
+            if (index < 0 || index >= x.Length) throw new ArgumentOutOfRangeException("length");
 
             if (index == 0)
             {
@@ -797,8 +797,8 @@ namespace BPlusTree
         private static void RightShift(T[] x, int index, int length)
         {
             if (length == 0) return;
-            if (length < 0 || length > x.Length) throw new ArgumentOutOfRangeException(nameof(length));
-            if (index < 0 || index >= x.Length) throw new ArgumentOutOfRangeException(nameof(length));
+            if (length < 0 || length > x.Length) throw new ArgumentOutOfRangeException("length");
+            if (index < 0 || index >= x.Length) throw new ArgumentOutOfRangeException("length");
 
             var lastInd = x.Length - 1;
             if (index + length > lastInd) // if overflows, rotate.
@@ -986,7 +986,7 @@ namespace BPlusTree
             public Enumerator(RingArray<T> array)
             {
                 this.array = array;
-                version = array?.version ?? 0;
+                version = array != null ? array.version : 0;
                 position = 0;
                 current = default(T);
             }
@@ -1031,7 +1031,7 @@ namespace BPlusTree
             /// <inheritdoc />
             public void Reset()
             {
-                version = array?.version ?? 0;
+                version = array != null ? array.version : 0;
                 position = 0;
                 current = default(T);
             }
@@ -1062,7 +1062,7 @@ namespace BPlusTree
             {
                 if (null == array)
                 {
-                    throw new ArgumentNullException(nameof(array));
+                    throw new ArgumentNullException("array");
                 }
 
                 _array = array;

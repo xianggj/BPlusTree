@@ -20,8 +20,15 @@ namespace BPlusTree
             return t.Item3;
         };
 
-        public new ValueTuple<K, RingArray<T>> Last => base.Last;
-        public new ValueTuple<K, RingArray<T>> First => base.First;
+        public new ValueTuple<K, RingArray<T>> Last
+        {
+            get { return base.Last; }
+        }
+
+        public new ValueTuple<K, RingArray<T>> First
+        {
+            get { return base.First; }
+        }
 
         #endregion
 
@@ -206,9 +213,15 @@ namespace BPlusTree
                 builder = new BPTree<K, RingArray<T>>.Builder(tree);
             }
 
-            public void Add(K key, T value) => builder.Add(key, value, _add, _update);
+            public void Add(K key, T value)
+            {
+                builder.Add(key, value, _add, _update);
+            }
 
-            public SparseArray<K, T> Build() => (SparseArray<K, T>) builder.Build();
+            public SparseArray<K, T> Build()
+            {
+                return (SparseArray<K, T>) builder.Build();
+            }
         }
 
         #endregion

@@ -18,12 +18,12 @@ namespace BPlusTree
         /// <summary>
         /// maximum number of keys in internal node.
         /// </summary>
-        public int InternalNodeCapacity { get; }
+        public int InternalNodeCapacity { get; set; }
 
         /// <summary>
         /// maximum number of keys in leaf node.
         /// </summary>
-        public int LeafCapacity { get; }
+        public int LeafCapacity { get; set; }
 
         /// <summary>
         /// current height of this tree.
@@ -38,7 +38,10 @@ namespace BPlusTree
         /// <summary>
         /// key comparer used in this tree to compare keys against each other.
         /// </summary>
-        public IComparer<TKey> KeyComparer => _comparer.KeyComparer;
+        public IComparer<TKey> KeyComparer
+        {
+            get { return _comparer.KeyComparer; }
+        }
 
         #endregion
 
@@ -60,10 +63,10 @@ namespace BPlusTree
         public BPTree(IComparer<TKey> keyComparer = null, int internalNodeCapacity = 32, int leafCapacity = 32)
         {
             if (internalNodeCapacity < 2)
-                throw new ArgumentOutOfRangeException(nameof(internalNodeCapacity),
+                throw new ArgumentOutOfRangeException("internalNodeCapacity",
                     "internal node capacity must be greater than 1.");
             if (leafCapacity < 1)
-                throw new ArgumentOutOfRangeException(nameof(leafCapacity), "leaf capacity must be greater than 0.");
+                throw new ArgumentOutOfRangeException("leafCapacity", "leaf capacity must be greater than 0.");
 
             _comparer = new NodeComparer(keyComparer);
 
@@ -296,7 +299,7 @@ namespace BPlusTree
                 Height--;
             }
 
-            if (ReverseLinkList?.Previous != null &&
+            if (ReverseLinkList !=null && ReverseLinkList.Previous != null &&
                 ReverseLinkList.Previous.Next == null) // true if last leaf is merged.
             {
                 ReverseLinkList = ReverseLinkList.Previous;

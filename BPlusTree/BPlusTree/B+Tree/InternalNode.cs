@@ -27,11 +27,30 @@ namespace BPlusTree
 
             #region Properties
 
-            public override bool IsLeaf => false;
-            public override bool IsFull => Items.IsFull;
-            public override bool IsHalfFull => Items.IsHalfFull;
-            public override int Length => Items.Count;
-            public override TKey FirstKey => Items.First.Key;
+            public override bool IsLeaf
+            {
+                get { return false; }
+            }
+
+            public override bool IsFull
+            {
+                get { return Items.IsFull; }
+            }
+
+            public override bool IsHalfFull
+            {
+                get { return Items.IsHalfFull; }
+            }
+
+            public override int Length
+            {
+                get { return Items.Count; }
+            }
+
+            public override TKey FirstKey
+            {
+                get { return Items.First.Key; }
+            }
 
             #endregion
 
@@ -54,8 +73,15 @@ namespace BPlusTree
                 return GetChild(index);
             }
 
-            public Node GetLastChild() => Items.Last.Right;
-            public Node GetFirstChild() => Left;
+            public Node GetLastChild()
+            {
+                return Items.Last.Right;
+            }
+
+            public Node GetFirstChild()
+            {
+                return Left;
+            }
 
             #endregion
 
@@ -207,7 +233,7 @@ namespace BPlusTree
             private bool CanSpillTo(Node node, out InternalNode inode)
             {
                 inode = (InternalNode)node;
-                return inode?.IsFull == false;
+                return inode != null ? !inode.IsFull : false;
             }
 
             #endregion

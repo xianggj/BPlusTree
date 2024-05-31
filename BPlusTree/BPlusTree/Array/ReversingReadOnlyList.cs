@@ -24,17 +24,30 @@ namespace BPlusTree
             this.source = source;
         }
 
-        public T this[int index] => source[source.Count - 1 - index];
+        public T this[int index]
+        {
+            get { return source[source.Count - 1 - index]; }
+        }
 
-        public int Count => source.Count;
+        public int Count
+        {
+            get { return source.Count; }
+        }
 
         public Enumerator GetEnumerator()
         {
             return new Enumerator(this);
         }
 
-        IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        IEnumerator<T> IEnumerable<T>.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
 
         /// <summary>
         /// struct enumerator for <see cref="ReversingReadOnlyList{T}"/>.
@@ -96,7 +109,10 @@ namespace BPlusTree
                 current = default(T);
             }
 
-            object IEnumerator.Current => Current;
+            object IEnumerator.Current
+            {
+                get { return Current; }
+            }
 
             /// <inheritdoc />
             public void Dispose()

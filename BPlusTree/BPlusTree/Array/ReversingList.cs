@@ -13,7 +13,7 @@ namespace BPlusTree
         {
             if (null == source)
             {
-                throw new ArgumentOutOfRangeException(nameof(source)); 
+                throw new ArgumentOutOfRangeException("source"); 
             }
 
             this.source = source;
@@ -37,9 +37,15 @@ namespace BPlusTree
             }
         }
 
-        public int Count => source.Count;
+        public int Count
+        {
+            get { return source.Count; }
+        }
 
-        public bool IsReadOnly => source.IsReadOnly;
+        public bool IsReadOnly
+        {
+            get { return source.IsReadOnly; }
+        }
 
         public void Add(T item)
         {
@@ -61,9 +67,9 @@ namespace BPlusTree
         public void CopyTo(T[] array, int arrayIndex)
         {
             if (array == null)
-                throw new ArgumentNullException(nameof(array));
+                throw new ArgumentNullException("array");
             if (arrayIndex < 0 || arrayIndex >= array.Length)
-                throw new IndexOutOfRangeException($"{nameof(arrayIndex)} is out of range. start index must be greater than zero and smaller than array length.");
+                throw new IndexOutOfRangeException("arrayIndex is out of range. start index must be greater than zero and smaller than array length.");
             if (Count > array.Length - arrayIndex)
                 throw new InvalidOperationException("target array is small.");
 
@@ -102,8 +108,15 @@ namespace BPlusTree
             return new Enumerator(this);
         }
 
-        IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        IEnumerator<T> IEnumerable<T>.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
 
         /// <summary>
         /// struct enumerator for <see cref="ReversingList{T}"/>.
@@ -121,7 +134,7 @@ namespace BPlusTree
             public Enumerator(ReversingList<T> source)
             {
                 this.source = source;
-                version = source?.version ?? 0;
+                version =source != null ? source.version : 0;
                 position = 0;
                 current = default(T);
             }
@@ -165,12 +178,16 @@ namespace BPlusTree
             /// <inheritdoc />
             public void Reset()
             {
-                version = source?.version ?? 0;
+                
+                version = source != null ? source.version : 0;
                 position = 0;
                 current = default(T);
             }
 
-            object IEnumerator.Current => Current;
+            object IEnumerator.Current
+            {
+                get { return Current; }
+            }
 
             /// <inheritdoc />
             public void Dispose()
