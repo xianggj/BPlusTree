@@ -299,7 +299,7 @@ namespace BPlusTree
                 Height--;
             }
 
-            if (ReverseLinkList !=null && ReverseLinkList.Previous != null &&
+            if (ReverseLinkList != null && ReverseLinkList.Previous != null &&
                 ReverseLinkList.Previous.Next == null) // true if last leaf is merged.
             {
                 ReverseLinkList = ReverseLinkList.Previous;
@@ -418,6 +418,59 @@ namespace BPlusTree
 
         #endregion
 
+        # region Indexer array index
+
+        /// <summary>
+        /// calculate the key index in the whole leaf node LinkList.
+        /// </summary>
+        protected int FindKeyIndex(TKey key)
+        {
+            int index;
+            var leaf = FindLeaf(key, out index); // index in the current leaf, not include previous leaf.
+
+            // plus Previous index size
+            var leafPrevious = leaf.Previous;
+            while (leafPrevious != null)
+            {
+                index += leafPrevious.Length;
+                leafPrevious = leafPrevious.Previous;
+            }
+
+            return index;
+        }
+
+        protected bool TryGet(int index, out TValue value)
+        {
+            value = default(TValue);
+            var _index = index;
+            foreach (var leafNode in GetLeafNodeEnumerable())
+            {
+                int len = leafNode.Length;
+                if (len > _index)
+                {
+                    value = leafNode.Items[_index].Value;
+                    return true;
+                }
+
+                _index = _index - len;
+            }
+
+            return false;
+        }
+
+
+        private IEnumerable<LeafNode> GetLeafNodeEnumerable()
+        {
+            LeafNode leaf = LinkList;
+            while (leaf != null)
+            {
+                yield return leaf;
+                leaf = leaf.Next;
+            }
+        }
+
+        # endregion
+
         #region AsEnumerable
 
         /// <summary>
@@ -438,7 +491,7 @@ namespace BPlusTree
         {
             var enumerable = AsPairEnumerable(moveForward);
             if (filter) enumerable = enumerable.Where(x => x.Item2 is TCast);
-            return enumerable.Select(x =>ValueTuple.Create(x.Item1, (TCast) (object) x.Item2));
+            return enumerable.Select(x => ValueTuple.Create(x.Item1, (TCast) (object) x.Item2));
         }
 
         /// <summary>
