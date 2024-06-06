@@ -1,4 +1,6 @@
-﻿using System.Diagnostics;
+﻿using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 
 namespace BPlusTree
 {
@@ -48,6 +50,20 @@ namespace BPlusTree
                 get { return Items.Count; }
             }
 
+            public override IEnumerable<Node> GetChildren()
+            {
+                return Enumerable.Empty<Node>();
+            }
+
+            public override IEnumerable<TKey> KeyEnumerable()
+            {
+                return Items.Select(o => o.Key);
+                // for (int i = 0; i < Items.Count; i++)
+                // {
+                //     yield return Items[i].Key;
+                // }
+            }
+
             public override TKey FirstKey
             {
                 get { return Items.First.Key; }
@@ -59,7 +75,8 @@ namespace BPlusTree
 
             public override int Find(ref TKey key, NodeComparer comparer)
             {
-                return Items.BinarySearch(new KeyValueItem(key, default(TValue)), comparer); // find value in this bucket
+                // find value in this bucket
+                return Items.BinarySearch(new KeyValueItem(key, default(TValue)), comparer);
             }
 
             public override Node GetChild(int index)
@@ -171,6 +188,7 @@ namespace BPlusTree
                     Next.Previous = right;
                     right.Next = Next; // to make linked list.
                 }
+
                 right.Previous = this;
                 Next = right;
                 return right;
@@ -189,7 +207,7 @@ namespace BPlusTree
                 if (index >= 0)
                 {
                     Debug.Assert(index >= 0 && index <= Items.Count);
-                    
+
                     args.SetRemovedValue(Items.RemoveAt(index).Value); // remove item
 
                     if (!IsHalfFull) // borrow or merge
@@ -214,7 +232,7 @@ namespace BPlusTree
                             var p = relatives.RightAncestor.Items[relatives.RightAncestorIndex];
                             KeyNodeItem.ChangeKey(ref p, Next.Items.First.Key);
                             relatives.RightAncestor.Items[relatives.RightAncestorIndex] = p;
-                            
+
                             Validate(this);
                             Validate(Next);
                         }
@@ -226,7 +244,7 @@ namespace BPlusTree
                                 Previous.Items.MergeLeft(Items); // merge from left to keep items in order.
                                 Previous.Next = Next; // fix linked list
                                 if (Next != null) Next.Previous = Previous;
-                                
+
                                 Validate(Previous);
                                 Validate(Next);
                             }
@@ -256,7 +274,7 @@ namespace BPlusTree
             #endregion
 
             #region Debug
-            
+
             [Conditional("DEBUG")]
             private static void Validate(LeafNode node)
             {

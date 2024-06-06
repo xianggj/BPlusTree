@@ -1,11 +1,62 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace BPlusTree
 {
     class Program
     {
-        public static void Main(string[] args)
+        private static void Main(string[] args)
+        {
+            int BLOCK_CAPACITY_4_LST = 4;
+            int COUNT = 4;
+
+            IComparer<int> int32Cmp = Comparer<int>.Default;
+            BPTreeList<int, int> bPlusTreeList =
+                new BPTreeList<int, int>(o => o, int32Cmp, BLOCK_CAPACITY_4_LST, COUNT);
+
+            int[] arr =
+            {
+                // 10, +7, +8, +1, +4, +5, +2 //, +9
+                // +10, +7, +8, +1, +4, +5,+2, +9, +6, +3, +20, +79, +95, +55, +44, +60
+                // +7,+9,+2,+8,+4,+5,+10,+6,+3,+1,+57,+65,+72,+84,+63,+14
+                // +9,+2,+4,+5,+10,+6,+3,+1,+57,+65,+72,+84,+63,+14,-9,-10,+10,-10,+85,+53,+81
+                +9, +2, +4, +5, +10, +6, +3, +1, +57, +65, +72, +84, +63, +14, +85, +53, +81, +58, +64, +54, +7, +8, +86, +38, +27, +100, +39, +68, +51, +18, +15, +59
+            };
+
+
+            foreach (var a in arr)
+            {
+                bPlusTreeList.Add(a);
+                bPlusTreeList.Display();
+                Console.WriteLine();
+            }
+
+
+            var index = 0;
+            foreach (var i in bPlusTreeList)
+            {
+                Console.WriteLine("index:{0}, value:{1}", index++, i);
+            }
+
+
+            // bPlusTreeList.Remove(63);
+
+
+            bPlusTreeList.Display();
+
+
+            foreach (var i in arr)
+            {
+                Console.WriteLine("Remove {0}", i);
+                bPlusTreeList.Remove(i);
+                bPlusTreeList.Display();
+            }
+
+            Console.WriteLine("END");
+        }
+
+        public static void Main0(string[] args)
         {
             BPTreeList<int, string> tree =
                 new BPTreeList<int, string>(Int32.Parse, internalNodeCapacity: 5, leafCapacity: 3);
@@ -56,8 +107,8 @@ namespace BPlusTree
 
 
             string[] array1 = new string[tree.Count];
-            tree.CopyTo(array1,0);
-            Console.WriteLine("array :{0}", string.Join("\n",array1));
+            tree.CopyTo(array1, 0);
+            Console.WriteLine("array :{0}", string.Join("\n", array1));
         }
 
         public static void Main1(string[] args)

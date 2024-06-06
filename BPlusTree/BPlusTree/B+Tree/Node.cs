@@ -60,6 +60,16 @@ namespace BPlusTree
             /// number of items in this node.
             /// </summary>
             public abstract int Length { get; }
+
+            /// <summary>
+            /// returns an children node enumerable for this node.
+            /// </summary>
+            public abstract IEnumerable<Node> GetChildren();
+
+            /// <summary>
+            /// returns an key enumerable for this node.
+            /// </summary>
+            public abstract IEnumerable<TKey> KeyEnumerable();
         }
 
         #endregion
@@ -298,6 +308,7 @@ namespace BPlusTree
 
             /// <summary>
             /// if left sibling is sibling and not cousin
+            /// Two nodes are cousins of each other if they are at same level and have different parents.
             /// </summary>
             public readonly bool HasTrueLeftSibling;
 
@@ -339,7 +350,9 @@ namespace BPlusTree
                 {
                     leftAncestor = parentRelatives.LeftAncestor;
                     leftAncestorIndex = parentRelatives.LeftAncestorIndex;
-                    leftSibling = (InternalNode) parentRelatives.LeftSibling != null ? ((InternalNode) parentRelatives.LeftSibling).GetLastChild() : null;
+                    leftSibling = (InternalNode) parentRelatives.LeftSibling != null
+                        ? ((InternalNode) parentRelatives.LeftSibling).GetLastChild()
+                        : null;
                     hasTrueLeftSibling = false;
 
                     rightAncestor = parent;
@@ -356,7 +369,9 @@ namespace BPlusTree
 
                     rightAncestor = parentRelatives.RightAncestor;
                     rightAncestorIndex = parentRelatives.RightAncestorIndex;
-                    rightSibling = (InternalNode) parentRelatives.RightSibling != null ? ((InternalNode) parentRelatives.RightSibling).GetFirstChild() : null;
+                    rightSibling = (InternalNode) parentRelatives.RightSibling != null
+                        ? ((InternalNode) parentRelatives.RightSibling).GetFirstChild()
+                        : null;
                     hasTrueRightSibling = false;
                 }
                 else // child is not right most nor left most.
