@@ -13,6 +13,7 @@ namespace BPlusTree
             // leaf node siblings are linked to gether to make doubly linked list.
             public LeafNode Previous;
             public LeafNode Next;
+            private Node _parent;
 
             #region Constructors
 
@@ -62,6 +63,12 @@ namespace BPlusTree
                 // {
                 //     yield return Items[i].Key;
                 // }
+            }
+
+            public override Node Parent
+            {
+                get { return _parent; }
+                set { _parent = value; }
             }
 
             public override TKey FirstKey

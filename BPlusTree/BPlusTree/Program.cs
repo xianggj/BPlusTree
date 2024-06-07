@@ -27,6 +27,11 @@ namespace BPlusTree
 
             foreach (var a in arr)
             {
+                if (59 == a)
+                {
+                    int aa = 1;
+
+                }
                 bPlusTreeList.Add(a);
                 bPlusTreeList.Display();
                 Console.WriteLine();
@@ -51,6 +56,7 @@ namespace BPlusTree
                 Console.WriteLine("Remove {0}", i);
                 bPlusTreeList.Remove(i);
                 bPlusTreeList.Display();
+                Console.WriteLine();
             }
 
             Console.WriteLine("END");
