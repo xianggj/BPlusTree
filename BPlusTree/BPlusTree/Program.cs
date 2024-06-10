@@ -8,8 +8,8 @@ namespace BPlusTree
     {
         private static void Main(string[] args)
         {
-            int BLOCK_CAPACITY_4_LST = 4;
-            int COUNT = 4;
+            int BLOCK_CAPACITY_4_LST = 3;
+            int COUNT = 3;
 
             IComparer<int> int32Cmp = Comparer<int>.Default;
             BPTreeList<int, int> bPlusTreeList =
@@ -27,6 +27,12 @@ namespace BPlusTree
 
             foreach (var a in arr)
             {
+                if (85 == a)
+                {
+                    int aa = 1;
+
+                }
+                Console.WriteLine("Add {0}", a);
                 bPlusTreeList.Add(a);
                 bPlusTreeList.Display();
                 Console.WriteLine();
@@ -48,9 +54,15 @@ namespace BPlusTree
 
             foreach (var i in arr)
             {
+                if (6 == i)
+                {
+                    int aa = 1;
+
+                }
                 Console.WriteLine("Remove {0}", i);
                 bPlusTreeList.Remove(i);
                 bPlusTreeList.Display();
+                Console.WriteLine();
             }
 
             Console.WriteLine("END");

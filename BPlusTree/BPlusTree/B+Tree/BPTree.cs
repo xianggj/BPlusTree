@@ -154,6 +154,15 @@ namespace BPlusTree
                 ReverseLinkList.Items.PushLast(new KeyValueItem(args.Key, args.GetValue()));
                 Count++;
                 _version++;
+                var __temp = Root;
+                __temp.AddAndGetSubtreeValueCount(1);
+                while (!__temp.IsLeaf)
+                {
+                    var lastIndex = __temp.Length - 1;
+                    __temp = __temp.GetChild(lastIndex);
+                    __temp.AddAndGetSubtreeValueCount(1);
+                }
+
                 return;
             }
             else if (order == 0)
@@ -172,6 +181,15 @@ namespace BPlusTree
                 LinkList.Items.PushFirst(new KeyValueItem(args.Key, args.GetValue()));
                 Count++;
                 _version++;
+                var __temp = Root;
+                __temp.AddAndGetSubtreeValueCount(1);
+                while (!__temp.IsLeaf)
+                {
+                    var firstIndex = -1;
+                    __temp = __temp.GetChild(firstIndex);
+                    __temp.AddAndGetSubtreeValueCount(1);
+                }
+
                 return;
             }
             else if (order == 0)
@@ -195,6 +213,8 @@ namespace BPlusTree
                 var middle = (KeyNodeItem) rightSplit;
                 var newRoot = new InternalNode(InternalNodeCapacity) {Left = Root};
                 newRoot.Items.Insert(0, middle);
+                newRoot.AddAndGetSubtreeValueCount(Root.AddAndGetSubtreeValueCount(0));
+                newRoot.AddAndGetSubtreeValueCount(middle.Right.AddAndGetSubtreeValueCount(0));
                 Root = newRoot;
                 Height++;
             }

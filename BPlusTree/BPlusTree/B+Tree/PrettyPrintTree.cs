@@ -349,9 +349,9 @@ namespace BPlusTree
             }
 
             string key = String.Join("| ", node.KeyEnumerable());
-            return key;
-            // string count = node.SubtreeValueCount.ToString();
-            // return String.Format("[{0}] {1}", count, key);
+            // return key;
+            string count = node.AddAndGetSubtreeValueCount(0).ToString();
+            return String.Format("[{0}] {1}", count, key);
         }
 
         public void Display()

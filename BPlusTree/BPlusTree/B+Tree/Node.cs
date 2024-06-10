@@ -70,6 +70,8 @@ namespace BPlusTree
             /// returns an key enumerable for this node.
             /// </summary>
             public abstract IEnumerable<TKey> KeyEnumerable();
+            
+            public abstract int AddAndGetSubtreeValueCount(int delta);
         }
 
         #endregion
@@ -317,6 +319,12 @@ namespace BPlusTree
             /// </summary>
             public readonly bool HasTrueRightSibling;
 
+
+            public int Delta;
+            public int LeftSiblingDelta;
+            public int RightSiblingDelta;
+           
+
             private NodeRelatives(InternalNode leftAncestor, int leftAncestorIndex, Node leftSibling,
                 bool hasTrueLeftSibling,
                 InternalNode rightAncestor, int rightAncestorIndex, Node rightSibling, bool hasTrueRightSibling)
@@ -330,10 +338,18 @@ namespace BPlusTree
                 RightAncestorIndex = rightAncestorIndex;
                 RightSibling = rightSibling;
                 HasTrueRightSibling = hasTrueRightSibling;
+                
+                Delta = 0;
+                LeftSiblingDelta = 0;
+                RightSiblingDelta = 0;
+
             }
 
             /// <summary>
             /// creates new relatives for child node.
+            /// <param name="child">child node</param>
+            /// <param name="index"> child index in parent</param>
+            /// <param name="parent"> child's parent node</param>
             /// </summary>
             public static NodeRelatives Create(Node child, int index, InternalNode parent,
                 ref NodeRelatives parentRelatives)

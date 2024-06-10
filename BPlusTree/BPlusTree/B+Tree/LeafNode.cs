@@ -13,12 +13,14 @@ namespace BPlusTree
             // leaf node siblings are linked to gether to make doubly linked list.
             public LeafNode Previous;
             public LeafNode Next;
+            private int _subtreeValueCount;
 
             #region Constructors
 
             public LeafNode(RingArray<KeyValueItem> items)
             {
                 Items = items;
+                _subtreeValueCount = items.Count;
             }
 
             public LeafNode(int capacity)
@@ -62,6 +64,12 @@ namespace BPlusTree
                 // {
                 //     yield return Items[i].Key;
                 // }
+            }
+
+            public override int AddAndGetSubtreeValueCount(int delta)
+            {
+                _subtreeValueCount += delta;
+                return _subtreeValueCount;
             }
 
             public override TKey FirstKey
@@ -111,6 +119,8 @@ namespace BPlusTree
                     if (!IsFull) // if there is space, add and return.
                     {
                         Items.Insert(index, item); // insert value and return.
+                        AddAndGetSubtreeValueCount(1);
+                        relatives.Delta += 1;
                     }
                     else // cant add, spill or split
                     {
@@ -118,6 +128,8 @@ namespace BPlusTree
                         {
                             var first = Items.InsertPopFirst(index, item);
                             Previous.Items.PushLast(first); // move smallest item to left sibling.
+                            Previous.AddAndGetSubtreeValueCount(1);
+                            relatives.LeftSiblingDelta += 1;
 
                             // update ancestors key.
                             var pl = relatives.LeftAncestor.Items[relatives.LeftAncestorIndex];
@@ -131,6 +143,8 @@ namespace BPlusTree
                         {
                             var last = Items.InsertPopLast(index, item);
                             Next.Items.PushFirst(last);
+                            Next.AddAndGetSubtreeValueCount(1);
+                            relatives.RightSiblingDelta += 1;
 
                             // update ancestors key.
                             var pr = relatives.RightAncestor.Items[relatives.RightAncestorIndex];
@@ -143,7 +157,12 @@ namespace BPlusTree
                         else // split, then promote middle item
                         {
                             var rightNode = SplitRight();
+                            
+                            var delta = - rightNode._subtreeValueCount;
+                            AddAndGetSubtreeValueCount(delta);
+                            relatives.Delta += delta;
 
+                            // new item always insert into right node.
                             // insert item and find middle value to promote
                             if (index <= Items.Count)
                             {
@@ -155,6 +174,7 @@ namespace BPlusTree
                             {
                                 rightNode.Items.Insert(index - Items.Count, item);
                             }
+                            rightNode.AddAndGetSubtreeValueCount(1);
 
                             rightLeaf = new KeyNodeItem(rightNode.Items.First.Key, rightNode);
 

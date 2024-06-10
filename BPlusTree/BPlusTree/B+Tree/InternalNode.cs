@@ -12,12 +12,17 @@ namespace BPlusTree
             public readonly RingArray<KeyNodeItem> Items;
 
             public Node Left; // left most child.
+            private int _subtreeValueCount;
 
             #region Constructors
 
             public InternalNode(RingArray<KeyNodeItem> items)
             {
                 Items = items;
+                foreach (var item in Items)
+                {
+                    _subtreeValueCount += item.Right.AddAndGetSubtreeValueCount(0);
+                }
             }
 
             public InternalNode(int capacity)
@@ -67,6 +72,12 @@ namespace BPlusTree
             public override IEnumerable<TKey> KeyEnumerable()
             {
                 return Items.Select(o => o.Key);
+            }
+
+            public override int AddAndGetSubtreeValueCount(int delta)
+            {
+                _subtreeValueCount += delta;
+                return _subtreeValueCount;
             }
 
             public override TKey FirstKey
@@ -124,6 +135,43 @@ namespace BPlusTree
                 var child = GetChild(index);
                 var childRelatives = NodeRelatives.Create(child, index, this, ref relatives);
                 var rightChild = child.Insert(ref args, ref childRelatives);
+              
+                AddAndGetSubtreeValueCount(childRelatives.Delta);
+                relatives.Delta += childRelatives.Delta;
+
+                var leftSiblingDelta = childRelatives.LeftSiblingDelta;
+                if (childRelatives.HasTrueLeftSibling || relatives.LeftSibling==null)
+                {
+                    // has same parent node
+                    // this is the Root node
+                    AddAndGetSubtreeValueCount(leftSiblingDelta);
+                    relatives.Delta += leftSiblingDelta; 
+                }
+                else
+                {
+                    relatives.LeftSibling.AddAndGetSubtreeValueCount(leftSiblingDelta);
+                    relatives.LeftSiblingDelta += leftSiblingDelta; 
+                }
+
+                var rightSiblingDelta = childRelatives.RightSiblingDelta;
+                if (childRelatives.HasTrueRightSibling)
+                {
+                    // has same parent node
+                    AddAndGetSubtreeValueCount(rightSiblingDelta);
+                    relatives.Delta += rightSiblingDelta;
+
+                }else if (relatives.RightSibling == null)
+                {
+                    // this is the Root node
+                    AddAndGetSubtreeValueCount(rightSiblingDelta);
+                    relatives.Delta += rightSiblingDelta;
+                }
+                else
+                {
+                    relatives.RightSibling.AddAndGetSubtreeValueCount(rightSiblingDelta);
+                    relatives.RightSiblingDelta += rightSiblingDelta;  
+                }
+ 
 
                 if (rightChild is KeyNodeItem) // if splitted, add middle key to this node.
                 {
@@ -135,7 +183,11 @@ namespace BPlusTree
                     rightChild = null;
                     if (!IsFull)
                     {
+                        var delta = middle.Right.AddAndGetSubtreeValueCount(0);
                         Items.Insert(index, middle);
+                        
+                        AddAndGetSubtreeValueCount(delta);
+                        relatives.Delta += delta;
                     }
                     else
                     {
@@ -156,15 +208,24 @@ namespace BPlusTree
 
                             #endregion
 
+                            var middleDelta = middle.Right.AddAndGetSubtreeValueCount(0);
+                            AddAndGetSubtreeValueCount(middleDelta);
+                            relatives.Delta += middleDelta;
+                            
                             var first = Items.InsertPopFirst(index, middle);
-
+                            
                             KeyNodeItem.SwapRightWith(ref first, ref Left); // swap left and right pointers.
+                            var firstDelta = first.Right.AddAndGetSubtreeValueCount(0);// after SwapRightWith the first delta is origin LEFT
+                            AddAndGetSubtreeValueCount(-firstDelta);
+                            relatives.Delta += -firstDelta;
 
                             var pl = relatives.LeftAncestor.Items[relatives.LeftAncestorIndex];
                             KeyNodeItem.SwapKeys(ref pl, ref first); // swap ancestor key with item.
                             relatives.LeftAncestor.Items[relatives.LeftAncestorIndex] = pl;
 
                             leftSibling.Items.PushLast(first);
+                            leftSibling.AddAndGetSubtreeValueCount(firstDelta);
+                            relatives.LeftSiblingDelta += firstDelta;
 
                             Validate(this);
                             Validate(leftSibling);
@@ -183,7 +244,17 @@ namespace BPlusTree
 
                             #endregion
 
+                            
+                            var middleDelta = middle.Right.AddAndGetSubtreeValueCount(0);
+                            AddAndGetSubtreeValueCount(middleDelta);
+                            relatives.Delta += middleDelta;
+                            
                             var last = Items.InsertPopLast(index, middle);
+                            // the lost delta is last right,
+                            // the below swap action only in rightSibling inside.
+                            var lastDelta = last.Right.AddAndGetSubtreeValueCount(0); 
+                            AddAndGetSubtreeValueCount(-lastDelta);
+                            relatives.Delta += -lastDelta;
 
                             KeyNodeItem.SwapRightWith(ref last, ref rightSibling.Left); // swap left and right pointers.
 
@@ -192,6 +263,8 @@ namespace BPlusTree
                             relatives.RightAncestor.Items[relatives.RightAncestorIndex] = pr;
 
                             rightSibling.Items.PushFirst(last);
+                            rightSibling.AddAndGetSubtreeValueCount(lastDelta);
+                            relatives.LeftSiblingDelta += lastDelta;
 
                             Validate(this);
                             Validate(rightSibling);
@@ -235,17 +308,40 @@ namespace BPlusTree
 
                             var rightNode = new InternalNode(Items.SplitRight());
 
+                            var delta = -rightNode._subtreeValueCount;
+                            AddAndGetSubtreeValueCount(delta);
+                            relatives.Delta += delta;
+
                             // find middle key to promote
                             if (index < Items.Count)
                             {
+                                var addDelta = middle.Right.AddAndGetSubtreeValueCount(0);
+                                
                                 middle = Items.InsertPopLast(index, middle);
+
+                                var lostDelta = -middle.Right.AddAndGetSubtreeValueCount(0);
+                                
+                                AddAndGetSubtreeValueCount(addDelta);
+                                relatives.Delta += addDelta;
+                                AddAndGetSubtreeValueCount(lostDelta);
+                                relatives.Delta += lostDelta;
+
                             }
                             else if (index > Items.Count)
                             {
+                                var addDelta = middle.Right.AddAndGetSubtreeValueCount(0);
+
                                 middle = rightNode.Items.InsertPopFirst(index - Items.Count, middle);
+
+                                var lostDelta = -middle.Right.AddAndGetSubtreeValueCount(0);
+                                rightNode.AddAndGetSubtreeValueCount(addDelta + lostDelta);
                             }
 
                             rightNode.Left = middle.Right;
+                            // TODO not clearly
+                            var leftDelta = middle.Right.AddAndGetSubtreeValueCount(0);
+                            rightNode.AddAndGetSubtreeValueCount(leftDelta);
+                            
                             KeyNodeItem.ChangeRight(ref middle, rightNode);
                             rightChild = middle;
 
