@@ -12,17 +12,12 @@ namespace BPlusTree
             public readonly RingArray<KeyNodeItem> Items;
 
             public Node Left; // left most child.
-            private Node _parent;
 
             #region Constructors
 
             public InternalNode(RingArray<KeyNodeItem> items)
             {
                 Items = items;
-                foreach (var item in Items)
-                {
-                    item.Right.Parent = this;
-                }
             }
 
             public InternalNode(int capacity)
@@ -72,12 +67,6 @@ namespace BPlusTree
             public override IEnumerable<TKey> KeyEnumerable()
             {
                 return Items.Select(o => o.Key);
-            }
-
-            public override Node Parent
-            {
-                get { return _parent; }
-                set { _parent = value; }
             }
 
             public override TKey FirstKey
@@ -139,7 +128,6 @@ namespace BPlusTree
                 if (rightChild is KeyNodeItem) // if splitted, add middle key to this node.
                 {
                     var middle = (KeyNodeItem) rightChild;
-                    middle.Right.Parent = this; // set new child node parent is the current 
                     // +1 because middle is always right side which is fresh node. 
                     // items at index already point to left node after split. so middle must go after index.
                     index++;
@@ -177,7 +165,6 @@ namespace BPlusTree
                             relatives.LeftAncestor.Items[relatives.LeftAncestorIndex] = pl;
 
                             leftSibling.Items.PushLast(first);
-                            first.Right.Parent = leftSibling; // # 1
 
                             Validate(this);
                             Validate(leftSibling);
@@ -205,7 +192,6 @@ namespace BPlusTree
                             relatives.RightAncestor.Items[relatives.RightAncestorIndex] = pr;
 
                             rightSibling.Items.PushFirst(last);
-                            last.Right.Parent = rightSibling; // # 2
 
                             Validate(this);
                             Validate(rightSibling);
@@ -248,7 +234,6 @@ namespace BPlusTree
                             #endregion
 
                             var rightNode = new InternalNode(Items.SplitRight());
-                            rightNode.Parent = this.Parent;
 
                             // find middle key to promote
                             if (index < Items.Count)
@@ -257,12 +242,10 @@ namespace BPlusTree
                             }
                             else if (index > Items.Count)
                             {
-                                middle.Right.Parent = rightNode;
                                 middle = rightNode.Items.InsertPopFirst(index - Items.Count, middle);
                             }
 
                             rightNode.Left = middle.Right;
-                            rightNode.Left.Parent = rightNode;// for current pop last Key
                             KeyNodeItem.ChangeRight(ref middle, rightNode);
                             rightChild = middle;
 
@@ -318,7 +301,6 @@ namespace BPlusTree
                             relatives.LeftAncestor.Items[relatives.LeftAncestorIndex] = pr;
 
                             Items.PushFirst(last);
-                            last.Right.Parent = this;
 
                             Validate(this);
                             Validate(leftSibling);
@@ -335,7 +317,6 @@ namespace BPlusTree
                             relatives.RightAncestor.Items[relatives.RightAncestorIndex] = pl;
 
                             Items.PushLast(first);
-                            first.Right.Parent = this;
 
                             Validate(this);
                             Validate(rightSibling);

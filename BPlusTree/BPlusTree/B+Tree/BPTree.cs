@@ -193,10 +193,8 @@ namespace BPlusTree
             if (rightSplit is KeyNodeItem)
             {
                 var middle = (KeyNodeItem) rightSplit;
-                var newRoot = new InternalNode(InternalNodeCapacity){Left = Root};
-                newRoot.Left.Parent = newRoot;
+                var newRoot = new InternalNode(InternalNodeCapacity) {Left = Root};
                 newRoot.Items.Insert(0, middle);
-                middle.Right.Parent = newRoot;
                 Root = newRoot;
                 Height++;
             }
@@ -296,10 +294,6 @@ namespace BPlusTree
                 {
                     LinkList = null;
                     ReverseLinkList = null;
-                }
-                else
-                {
-                    Root.Parent = null;
                 }
 
                 Height--;

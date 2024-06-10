@@ -70,8 +70,6 @@ namespace BPlusTree
             /// returns an key enumerable for this node.
             /// </summary>
             public abstract IEnumerable<TKey> KeyEnumerable();
-            
-            public abstract Node Parent { get; set; }
         }
 
         #endregion
