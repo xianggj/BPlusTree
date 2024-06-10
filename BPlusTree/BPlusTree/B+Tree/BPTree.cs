@@ -276,6 +276,16 @@ namespace BPlusTree
                 Debug.Assert(Root == LinkList || LinkList.IsHalfFull);
                 Count--;
                 _version++;
+                
+                var __temp = Root;
+                __temp.AddAndGetSubtreeValueCount(-1);
+                while (!__temp.IsLeaf)
+                {
+                    var firstIndex = -1;
+                    __temp = __temp.GetChild(firstIndex);
+                    __temp.AddAndGetSubtreeValueCount(-1);
+                }
+
                 if (Count == 0)
                 {
                     Root = LinkList = ReverseLinkList = null;
@@ -295,6 +305,16 @@ namespace BPlusTree
                 Debug.Assert(Root == ReverseLinkList || ReverseLinkList.IsHalfFull);
                 Count--; // here count never becomes zero.
                 _version++;
+                
+                var __temp = Root;
+                __temp.AddAndGetSubtreeValueCount(-1);
+                while (!__temp.IsLeaf)
+                {
+                    var lastIndex = __temp.Length -1;
+                    __temp = __temp.GetChild(lastIndex);
+                    __temp.AddAndGetSubtreeValueCount(-1);
+                }
+                
                 return;
             }
 

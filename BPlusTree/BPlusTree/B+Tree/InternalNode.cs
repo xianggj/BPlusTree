@@ -377,6 +377,43 @@ namespace BPlusTree
                 var childRelatives = NodeRelatives.Create(child, index, this, ref relatives);
                 var childMerged = child.Remove(ref args, ref childRelatives);
 
+                AddAndGetSubtreeValueCount(childRelatives.Delta);
+                relatives.Delta += childRelatives.Delta;
+
+                var leftSiblingDelta = childRelatives.LeftSiblingDelta;
+                if (childRelatives.HasTrueLeftSibling || relatives.LeftSibling==null)
+                {
+                    // has same parent node
+                    // this is the Root node
+                    AddAndGetSubtreeValueCount(leftSiblingDelta);
+                    relatives.Delta += leftSiblingDelta; 
+                }
+                else
+                {
+                    relatives.LeftSibling.AddAndGetSubtreeValueCount(leftSiblingDelta);
+                    relatives.LeftSiblingDelta += leftSiblingDelta; 
+                }
+
+                var rightSiblingDelta = childRelatives.RightSiblingDelta;
+                if (childRelatives.HasTrueRightSibling)
+                {
+                    // has same parent node
+                    AddAndGetSubtreeValueCount(rightSiblingDelta);
+                    relatives.Delta += rightSiblingDelta;
+
+                }else if (relatives.RightSibling == null)
+                {
+                    // this is the Root node
+                    AddAndGetSubtreeValueCount(rightSiblingDelta);
+                    relatives.Delta += rightSiblingDelta;
+                }
+                else
+                {
+                    relatives.RightSibling.AddAndGetSubtreeValueCount(rightSiblingDelta);
+                    relatives.RightSiblingDelta += rightSiblingDelta;  
+                }
+
+                
                 if (childMerged)
                 {
                     // removes right sibling of child if left most child is merged, other wise merged child is removed.
@@ -389,6 +426,9 @@ namespace BPlusTree
                         if (CanBorrowFrom(relatives.LeftSibling, out leftSibling))
                         {
                             var last = leftSibling.Items.PopLast();
+                            var delta = last.Right.AddAndGetSubtreeValueCount(0);
+                            leftSibling.AddAndGetSubtreeValueCount(-delta);
+                            relatives.LeftSiblingDelta += -delta;
 
                             KeyNodeItem.SwapRightWith(ref last, ref Left); // swap left and right pointers.
 
@@ -397,6 +437,8 @@ namespace BPlusTree
                             relatives.LeftAncestor.Items[relatives.LeftAncestorIndex] = pr;
 
                             Items.PushFirst(last);
+                            AddAndGetSubtreeValueCount(delta);
+                            relatives.Delta += delta;
 
                             Validate(this);
                             Validate(leftSibling);
@@ -407,12 +449,18 @@ namespace BPlusTree
 
                             // swap left and right pointers.
                             KeyNodeItem.SwapRightWith(ref first, ref rightSibling.Left);
+                            
+                            var delta = first.Right.AddAndGetSubtreeValueCount(0);
+                            rightSibling.AddAndGetSubtreeValueCount(-delta);
+                            relatives.RightSiblingDelta += -delta;
 
                             var pl = relatives.RightAncestor.Items[relatives.RightAncestorIndex];
                             KeyNodeItem.SwapKeys(ref pl, ref first); // swap ancestor key with item.
                             relatives.RightAncestor.Items[relatives.RightAncestorIndex] = pl;
 
                             Items.PushLast(first);
+                            AddAndGetSubtreeValueCount(delta);
+                            relatives.Delta += delta;
 
                             Validate(this);
                             Validate(rightSibling);
@@ -422,21 +470,33 @@ namespace BPlusTree
                             merge = true;
                             if (relatives.HasTrueLeftSibling) // current node will be removed from parent
                             {
+                                var delta = _subtreeValueCount;
                                 var pkey = relatives.LeftAncestor.Items[relatives.LeftAncestorIndex].Key; // demote key
                                 var mid = new KeyNodeItem(pkey, Left);
                                 leftSibling.Items.PushLast(mid);
                                 leftSibling.Items.MergeLeft(Items); // merge from left to keep items in order.
 
+                                AddAndGetSubtreeValueCount(-delta);
+                                relatives.Delta += -delta;
+                                leftSibling.AddAndGetSubtreeValueCount(delta);
+                                relatives.LeftSiblingDelta += delta;
+                                
                                 Validate(leftSibling);
                             }
                             else if (relatives.HasTrueRightSibling) // right sibling will be removed from parent
                             {
+                                var delta = rightSibling._subtreeValueCount;
                                 // demote key
                                 var pkey = relatives.RightAncestor.Items[relatives.RightAncestorIndex].Key;
                                 var mid = new KeyNodeItem(pkey, rightSibling.Left);
                                 Items.PushLast(mid);
                                 Items.MergeLeft(rightSibling.Items); // merge from right to keep items in order.
 
+                                AddAndGetSubtreeValueCount(delta);
+                                relatives.Delta += delta;
+                                rightSibling.AddAndGetSubtreeValueCount(-delta);
+                                relatives.RightSiblingDelta += -delta;
+                                
                                 Validate(this);
                             }
                         }
