@@ -276,7 +276,7 @@ namespace BPlusTree
                 Debug.Assert(Root == LinkList || LinkList.IsHalfFull);
                 Count--;
                 _version++;
-                
+
                 var __temp = Root;
                 __temp.AddAndGetSubtreeValueCount(-1);
                 while (!__temp.IsLeaf)
@@ -305,16 +305,16 @@ namespace BPlusTree
                 Debug.Assert(Root == ReverseLinkList || ReverseLinkList.IsHalfFull);
                 Count--; // here count never becomes zero.
                 _version++;
-                
+
                 var __temp = Root;
                 __temp.AddAndGetSubtreeValueCount(-1);
                 while (!__temp.IsLeaf)
                 {
-                    var lastIndex = __temp.Length -1;
+                    var lastIndex = __temp.Length - 1;
                     __temp = __temp.GetChild(lastIndex);
                     __temp.AddAndGetSubtreeValueCount(-1);
                 }
-                
+
                 return;
             }
 
@@ -414,8 +414,8 @@ namespace BPlusTree
             while (!node.IsLeaf) node = node.GetNearestChild(key, _comparer);
             index = node.Find(ref key, _comparer);
             return (LeafNode) node;
-        }      
-        
+        }
+
         /// <summary>
         /// find the leaf and index of the key. if key is not found complement of the index is returned.
         ///
@@ -442,9 +442,10 @@ namespace BPlusTree
             while (!node.IsLeaf)
             {
                 int c;
-                node = node.GetNearestChild(key, _comparer,out c);
+                node = node.GetNearestChild(key, _comparer, out c);
                 count += c;
             }
+
             index = node.Find(ref key, _comparer);
             return (LeafNode) node;
         }
@@ -460,8 +461,8 @@ namespace BPlusTree
             if (leafIndex >= leaf.Items.Count) leafIndex--;
             return leaf.Items[leafIndex].Value;
         }
-        
-        
+
+
         /// <summary>
         /// The index of the specified value in the leaf linked list.
         /// like Array.BinarySearch.
@@ -470,12 +471,12 @@ namespace BPlusTree
         {
             int leafIndex;
             int count;
-            var leaf = FindLeaf(key, out leafIndex,out count);
+            var leaf = FindLeaf(key, out leafIndex, out count);
             bool notExists = leafIndex < 0;
             if (leafIndex < 0) leafIndex = ~leafIndex; // get nearest
             // if (leafIndex >= leaf.Items.Count) leafIndex--;
             int index = count + leafIndex;
-            if (notExists)  return ~index;
+            if (notExists) return ~index;
             return index;
         }
 
@@ -530,20 +531,37 @@ namespace BPlusTree
             return index;
         }
 
+        /// <summary>
+        /// get value by linked leaf node list array index
+        /// </summary>
+        /// <param name="index">array index, [0,1,2...]</param>
+        /// <param name="value"></param>
+        /// <returns></returns>
         protected bool TryGet(int index, out TValue value)
         {
             value = default(TValue);
-            var _index = index;
-            foreach (var leafNode in GetLeafNodeEnumerable())
-            {
-                int len = leafNode.Length;
-                if (len > _index)
-                {
-                    value = leafNode.Items[_index].Value;
-                    return true;
-                }
+            var tempIndex = index;
 
-                _index = _index - len;
+            var tempNode = Root;
+            while (!tempNode.IsLeaf && tempIndex >= 0)
+            {
+                foreach (var child in tempNode.GetChildren())
+                {
+                    var c = child.AddAndGetSubtreeValueCount(0);
+                    if (tempIndex < c)
+                    {
+                        tempNode = child;
+                        break;
+                    }
+
+                    tempIndex -= c;
+                }
+            }
+
+            if (tempIndex >= 0)
+            {
+                value = ((LeafNode) tempNode).Items[tempIndex].Value;
+                return true;
             }
 
             return false;

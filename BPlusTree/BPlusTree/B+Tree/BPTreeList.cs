@@ -3,6 +3,25 @@ using System.Collections.Generic;
 
 namespace BPlusTree
 {
+    /// <summary>
+    ///
+    /// use B+Tree linked leaf node as list.
+    ///
+    /// 
+    /// TKey is better not to int , 
+    /// because there has confuse below two method:
+    /// 1. array index: this[int],
+    /// 2. key index: this[TKey]
+    ///
+    /// e.g.
+    /// BPTreeList<int,int> bptreelist
+    /// When want using int as TKey,  BPTreeList always return array index method's value.
+    /// To solve the issues ,  using `BPTree bptree =  bptreelist`, then BPTree can return key index method's value.
+    /// 
+    /// Cannot be used on one instance.
+    /// </summary>
+    /// <typeparam name="TKey">sortable Key, better not to int</typeparam>
+    /// <typeparam name="TValue"></typeparam>
     public class BPTreeList<TKey, TValue> : BPTree<TKey, TValue>, IList<TValue>
     {
         private Func<TValue, TKey> keyFunc;
@@ -14,6 +33,7 @@ namespace BPlusTree
             this.keyFunc = keyFunc;
         }
 
+        # region IList impl
 
         public void Add(TValue item)
         {
@@ -50,8 +70,6 @@ namespace BPlusTree
             get { return false; }
         }
 
-        # region IList impl
-
         public int IndexOf(TValue item)
         {
             if (item == null)
@@ -60,7 +78,7 @@ namespace BPlusTree
             }
 
             var key = keyFunc(item);
-            return FindKeyIndex(key);
+            return BinarySearch(key);
         }
 
         public void Insert(int index, TValue item)
@@ -73,7 +91,13 @@ namespace BPlusTree
             var item = this[index];
             Remove(item);
         }
-
+        
+        /// <summary>
+        /// care for this[TKey]
+        /// </summary>
+        /// <param name="index"></param>
+        /// <exception cref="KeyNotFoundException"></exception>
+        /// <exception cref="NotImplementedException"></exception>
         public TValue this[int index]
         {
             get
