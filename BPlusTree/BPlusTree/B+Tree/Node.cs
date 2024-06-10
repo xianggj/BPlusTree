@@ -38,6 +38,13 @@ namespace BPlusTree
             /// find nearest child with the key.
             /// </summary>
             public abstract Node GetNearestChild(TKey key, NodeComparer comparer);
+            
+            /// <summary>
+            /// find nearest child with the key and sum key count between first and left sibling child.
+
+            /// <param name="count">sum key count between first leaf and the return node's left sibling leaf</param>
+            /// </summary>
+            public abstract Node GetNearestChild(TKey key, NodeComparer comparer, out int count);
 
             public abstract TKey FirstKey { get; }
 

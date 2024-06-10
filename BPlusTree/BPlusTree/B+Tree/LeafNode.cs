@@ -96,6 +96,12 @@ namespace BPlusTree
             {
                 return null;
             }
+            
+            public override Node GetNearestChild(TKey key, NodeComparer comparer, out int count)
+            {
+                count = 0;
+                return null;
+            }
 
             #endregion
 

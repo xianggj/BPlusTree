@@ -42,7 +42,7 @@ namespace BPlusTree
             var index = 0;
             foreach (var i in bPlusTreeList)
             {
-                Console.WriteLine("index:{0}, value:{1}", index++, i);
+                Console.WriteLine("index:{0}, value:{1}, BinarySearch index:{2}", index++, i,bPlusTreeList.BinarySearch(i));
             }
 
 
@@ -51,6 +51,8 @@ namespace BPlusTree
 
             bPlusTreeList.Display();
 
+            Console.WriteLine("BinarySearch {0}", bPlusTreeList.BinarySearch(87));
+            Console.WriteLine("BinarySearch {0}", bPlusTreeList.BinarySearch(86));
 
             foreach (var i in arr)
             {

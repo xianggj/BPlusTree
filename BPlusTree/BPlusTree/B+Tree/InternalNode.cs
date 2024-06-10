@@ -105,6 +105,37 @@ namespace BPlusTree
                 if (index < 0) index = ~index - 1; // get next nearest item.
                 return GetChild(index);
             }
+            
+            /// <summary>
+            /// find nearest child with the key and sum key count between first and left sibling child.
+            ///
+            /// [k1] [k2] [k3]
+            /// /  \   \   \
+            ///[3] [2] [3] [3]  : the number in node is value count.
+            ///
+            /// 
+            ///  when <![CDATA[ k2 <= key < k3  ]]> ,
+            /// then count is 3 + 2 +3,  the sum k1 k2 all children node key count,
+            /// the return Node is last leaf node [3] , the key k3's child node
+            ///
+            /// 
+            /// <param name="count">sum key count between first leaf and the return node's left sibling leaf</param>
+            /// </summary>
+            public override Node GetNearestChild(TKey key, NodeComparer comparer, out int count)
+            {
+                count = 0;
+                var index = Find(ref key, comparer);
+                if (index < 0) index = ~index - 1; // get next nearest item.
+                
+                if (index >= 0)
+                {
+                    count += GetChildren().Take(index+1)
+                        .Select(node => node.AddAndGetSubtreeValueCount(0))
+                        .Sum(); 
+                }
+               
+                return GetChild(index);
+            }
 
             public Node GetLastChild()
             {

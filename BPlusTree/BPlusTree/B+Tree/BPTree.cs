@@ -414,6 +414,39 @@ namespace BPlusTree
             while (!node.IsLeaf) node = node.GetNearestChild(key, _comparer);
             index = node.Find(ref key, _comparer);
             return (LeafNode) node;
+        }      
+        
+        /// <summary>
+        /// find the leaf and index of the key. if key is not found complement of the index is returned.
+        ///
+        ///   [ ][ ]
+        ///   / \  \ 
+        /// [x] [x] [k]
+        /// /  \   \   \ 
+        ///[3]-[3]-[2]-[k,3]
+        ///
+        /// the number in leaf node is value count.
+        /// 
+        /// when the key is k
+        /// the return node is [k,3]
+        /// the count is 3 + 3 +2, sum key count between first leaf and the return node's left sibling leaf.
+        /// <param name="count">return sum key count between first leaf and the left sibling leaf.</param>
+        /// </summary>
+        private LeafNode FindLeaf(TKey key, out int index, out int count)
+        {
+            count = 0;
+            index = -1;
+            if (Count == 0) return null;
+
+            var node = Root;
+            while (!node.IsLeaf)
+            {
+                int c;
+                node = node.GetNearestChild(key, _comparer,out c);
+                count += c;
+            }
+            index = node.Find(ref key, _comparer);
+            return (LeafNode) node;
         }
 
         /// <summary>
@@ -426,6 +459,24 @@ namespace BPlusTree
             if (leafIndex < 0) leafIndex = ~leafIndex; // get nearest
             if (leafIndex >= leaf.Items.Count) leafIndex--;
             return leaf.Items[leafIndex].Value;
+        }
+        
+        
+        /// <summary>
+        /// The index of the specified value in the leaf linked list.
+        /// like Array.BinarySearch.
+        /// </summary>
+        public int BinarySearch(TKey key)
+        {
+            int leafIndex;
+            int count;
+            var leaf = FindLeaf(key, out leafIndex,out count);
+            bool notExists = leafIndex < 0;
+            if (leafIndex < 0) leafIndex = ~leafIndex; // get nearest
+            // if (leafIndex >= leaf.Items.Count) leafIndex--;
+            int index = count + leafIndex;
+            if (notExists)  return ~index;
+            return index;
         }
 
         /// <summary>
